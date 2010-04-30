@@ -1,0 +1,38 @@
+RABBITS Framework.
+
+
+Installation instructions.
+--------------------------
+
+
+To make all necessary installations, just run the install.sh script.
+
+$ ./install.sh
+
+If success, on termination you will have the complete framework available.
+
+
+Prerequisite.
+-------------
+
+<RABBITS_ROOT_DIR>/bashrc
+
+At the root of the RABBITS project dir, you will find bashrc file. This file
+contains all environment variables needed by the framework to work properly. So
+follow the white rabbit and fill it with proper values, and then source it.
+
+Platform utilisation.
+---------------------
+
+Just get in a platform top directory and compile it by simply run the make
+command.
+
+To give you an exemple of how to launch the platform, you will find a run
+script.
+
+An example software stack can be built from the soft directory in the platform
+directory.
+
+
+
+Thank you for using RABBITS.

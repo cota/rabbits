@@ -1,0 +1,11 @@
+#!/bin/sh
+
+mount /proc
+
+#mknod -m 600 /dev/console c 5 1
+mknod -m 666 /dev/null c 1 3
+mknod -m 600 /dev/ttyAMA0 c 254 0
+mknod -m 666 /dev/mem c 1 1
+
+#exec /sbin/init
+exec /bin/sh

@@ -1,0 +1,14 @@
+# Place here the Path to this dir
+export RABBITS_DIR=
+# Place here the Path to your SystemC install
+export RABBITS_SYSTEMC=
+export PATH=$PATH:${RABBITS_DIR}/rabbits/tools
+
+
+if [ -z "${RABBITS_DIR}" ]; then 
+   echo "You should edit the rabbits_env to set the RABBITS_DIR variable"
+fi
+
+if [ -z "${RABBITS_SYSTEMC}" ]; then
+   echo "You should edit the rabbits_env file to set the RABBITS_SYSTEMC variable"
+fi

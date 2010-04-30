@@ -1,0 +1,5 @@
+#<file sys>	<mount point>	<type>	<options>   	<dump>  <pass>
+none		/dev		devfs	defaults	0	0
+none            /proc		proc    defaults        0       0
+none            /sys            sysfs   noauto          0       0
+none		/tmp		tmpfs	defaults	0	0
