@@ -28,6 +28,8 @@ public :
     virtual unsigned long get_no_cpus  () = 0;
     virtual unsigned long get_cpu_fv_level (unsigned long cpu) = 0;
     virtual void set_cpu_fv_level (unsigned long cpu, unsigned long val) = 0;
+    virtual void generate_swi (unsigned long cpu_mask, unsigned long swi) = 0;
+    virtual void swi_ack (int cpu, unsigned long swi_mask) = 0;
 
     virtual unsigned long get_cpu_ncycles (unsigned long cpu) = 0;
     virtual uint64 get_no_instr_cpu (int cpu) = 0;

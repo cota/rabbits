@@ -55,6 +55,9 @@ extern "C"
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
     extern void systemc_invalidate_address (void *qemu_instance, unsigned long addr);
     extern unsigned long systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this);
+    extern void memory_mark_exclusive (int cpu, unsigned long addr);
+    extern int memory_test_exclusive (int cpu, unsigned long addr);
+    extern void memory_clear_exclusive (int cpu, unsigned long addr);
     extern unsigned long    no_cycles_cpu0;
 }
 
@@ -106,6 +109,9 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     sc_exp_fcs.systemc_get_mem_addr = (systemc_get_mem_addr_fc_t) systemc_get_mem_addr;
     sc_exp_fcs.systemc_invalidate_address = (systemc_invalidate_address_fc_t) systemc_invalidate_address;
     sc_exp_fcs.systemc_qemu_get_crt_thread = (systemc_qemu_get_crt_thread_fc_t) systemc_qemu_get_crt_thread;
+    sc_exp_fcs.memory_mark_exclusive = memory_mark_exclusive;
+    sc_exp_fcs.memory_test_exclusive = memory_test_exclusive;
+    sc_exp_fcs.memory_clear_exclusive = memory_clear_exclusive;
     sc_exp_fcs.no_cycles_cpu0 = &no_cycles_cpu0;
 
     m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu, firstcpuindex, cpumodel,
@@ -275,7 +281,7 @@ void qemu_wrapper::stnoc_interrupts_thread ()
                     m_cpus[i]->wakeup ();
             }
             else
-                if (bdown[cpu])
+                if (bdown[cpu] && !m_cpus[cpu]->m_swi)
                 {
                     wait (2.5, SC_NS);
                     m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 0);
@@ -304,6 +310,32 @@ void qemu_wrapper::set_cpu_fv_level (unsigned long cpu, unsigned long val)
     }
     else
         m_cpus[cpu - m_firstcpuindex]->set_cpu_fv_level (val);
+}
+
+void qemu_wrapper::generate_swi (unsigned long cpu_mask, unsigned long swi)
+{
+    int                         cpu;
+    for (cpu = 0; cpu < m_ncpu; cpu++)
+    {
+        if (cpu_mask & (1 << cpu))
+        {
+            m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
+            m_cpus[cpu]->m_swi |= swi;
+            m_cpus[cpu]->wakeup ();
+        }
+    }
+}
+
+void qemu_wrapper::swi_ack (int cpu, unsigned long swi_mask)
+{
+    unsigned long   swi = m_cpus[cpu]->m_swi;
+    if (swi == 0)
+        return;
+    swi &= ~swi_mask;
+    m_cpus[cpu]->m_swi = swi;
+
+    if (!m_cpu_interrupts_status[cpu] && !swi)
+        m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 0);
 }
 
 unsigned long qemu_wrapper::get_cpu_ncycles (unsigned long cpu)
@@ -344,7 +376,8 @@ void qemu_wrapper::set_int_enable (unsigned long val)
         if (!m_cpu_interrupts_status[cpu] && (m_cpu_interrupts_raw_status[cpu] & val))
             m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
         else
-            if (m_cpu_interrupts_status[cpu] && !(m_cpu_interrupts_raw_status[cpu] & val))
+            if (m_cpu_interrupts_status[cpu] && !(m_cpu_interrupts_raw_status[cpu] & val)
+                && !m_cpus[cpu]->m_swi)
                 m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 0);
 
         m_cpu_interrupts_status[cpu] &= m_interrupts_enable;

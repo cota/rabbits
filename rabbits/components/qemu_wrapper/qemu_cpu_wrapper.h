@@ -92,7 +92,7 @@ private:
     void                                    *m_qemu_instance;
     unsigned long                           m_base_address;
     unsigned long                           m_end_address;
-    bool                                    unblocking_write;
+    bool                                    m_unblocking_write;
 
     qemu_import_t                           *m_qemu_import;
 
@@ -110,6 +110,8 @@ public:
     int								        m_cpuindex;
     //    unsigned int                            m_node_id;
     unsigned long                           m_crt_cpu_thread;
+    unsigned long                           m_swi;
+ 
 };
 
 //typedef qemu_cpu_wrapper< stbus_bca_request<64>, stbus_bca_response<64> > qemu_cpu_wrapper_t;

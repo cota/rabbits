@@ -47,6 +47,8 @@ public:
     virtual unsigned long get_no_cpus  ();
     virtual unsigned long get_cpu_fv_level (unsigned long cpu);
     virtual void set_cpu_fv_level (unsigned long cpu, unsigned long val);
+    virtual void generate_swi (unsigned long cpu_mask, unsigned long swi);
+    virtual void swi_ack (int cpu, unsigned long swi_mask);
     virtual unsigned long get_cpu_ncycles (unsigned long cpu);
     virtual unsigned long get_int_status ();
     virtual unsigned long get_int_enable ();

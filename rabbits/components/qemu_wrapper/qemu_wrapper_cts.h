@@ -45,6 +45,7 @@
 #define GET_NO_INSTR_CPU3                           0x005C
 #define GET_NO_INSTR_CPU4                           0x0060
 #define GET_SYSTEMC_MAX_INT_PENDING				    0x0080
+#define GET_SECONDARY_STARTUP_ADDRESS               0x0084
 
 //set
 #define TEST_WRITE_SYSTEMC							0x0000
@@ -61,6 +62,9 @@
 #define TEST2_WRITE_SYSTEMC                         0x0068
 #define TEST3_WRITE_SYSTEMC                         0x0070
 #define LOG_SET_THREAD_CPU                          0x0080
+#define SET_SECONDARY_STARTUP_ADDRESS               0x0084
+#define GENERATE_SWI                                0x0088
+#define SWI_ACK                                     0x008C
 
 #endif
 

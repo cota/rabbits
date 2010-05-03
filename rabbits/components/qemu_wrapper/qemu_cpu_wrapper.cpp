@@ -33,6 +33,8 @@
 #define CPU_TIMEOUT							10000
 #define NS_PER_CPU_INSTR_AT_FV_MAX          (1000000000/SYSTEM_CLOCK_FV)
 
+static unsigned long                        s_addr_startup_secondary = 0xFFFFFFFF;
+
 //#define DEBUG_QEMU_CPU_WRAPPER
 #ifdef DEBUG_QEMU_CPU_WRAPPER
 #define DCOUT cout
@@ -73,7 +75,8 @@ qemu_cpu_wrapper::qemu_cpu_wrapper (sc_module_name name,
 
     m_crt_cpu_thread = 0;
     m_no_total_instr = 0;
-    unblocking_write = 1;
+    m_unblocking_write = 1;
+    m_swi = 0;
 
     m_cpuenv = m_qemu_import->qemu_get_set_cpu_obj (m_qemu_instance, cpuindex, this);
 
@@ -94,7 +97,7 @@ qemu_cpu_wrapper::~qemu_cpu_wrapper ()
 
 void qemu_cpu_wrapper::set_unblocking_write (bool val)
 {
-    unblocking_write = val;
+    m_unblocking_write = val;
 }
 
 void qemu_cpu_wrapper::consume_instruction_cycles_with_sync (unsigned long ninstr)
@@ -319,18 +322,28 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
             break;
 
         case GET_SYSTEMC_MAX_INT_PENDING:
-            val = m_port_access->get_int_status ();
-            if (!val)
-                val = 1023;
+            if (m_swi)
+            {
+                unsigned long           i = 1;
+                while ((i & m_swi) == 0)
+                    i <<= 1;
+                val = i;
+            }
             else
             {
-                unsigned long i = 0;
-                while (val)
+                val = m_port_access->get_int_status ();
+                if (!val)
+                    val = 1023;
+                else
                 {
-                    val >>= 1;
-                    i++;
+                    unsigned long i = 0;
+                    while (val)
+                    {
+                        val >>= 1;
+                        i++;
+                    }
+                    val = 32 + i - 1;
                 }
-                val = 32 + i - 1;
             }
             break;
 
@@ -353,6 +366,9 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
                 val = m_last_no_instr_high;
                 m_last_no_instr_high = (unsigned long) -1;
             }
+            break;
+        case GET_SECONDARY_STARTUP_ADDRESS:
+            val = s_addr_startup_secondary;
             break;
         default:
             val = 0xFFFFFFFF;
@@ -455,12 +471,21 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
         case TEST3_WRITE_SYSTEMC:
             printf ("TEST3_WRITE_SYSTEMC, ninstr=%llu\n", m_port_access->get_no_instr_cpu (-1));
             break;
+        case LOG_SET_THREAD_CPU:
+            m_crt_cpu_thread = data;
+            break;
+        case SET_SECONDARY_STARTUP_ADDRESS:
+            s_addr_startup_secondary = data;
+            break;
+        case GENERATE_SWI:
+            m_port_access->generate_swi (data, 1);
+            break;
+        case SWI_ACK:
+            m_port_access->swi_ack (m_cpuindex, data);
+            break;
         default:
             cerr << "Error: Bad qemu_wrapper address " << std::hex << addr 
                  << " in function " << __FUNCTION__ << "." << endl;
-            break;
-        case LOG_SET_THREAD_CPU:
-            m_crt_cpu_thread = data;
             break;
         }
     }
@@ -498,7 +523,7 @@ void qemu_cpu_wrapper::rcv_rsp(unsigned char tid, unsigned char *data,
 
     //DCOUT << name () << " received with success: " << endl << resp << endl;
 
-    if (unblocking_write && localrq->bWrite) //response for a write cmd
+    if (m_unblocking_write && localrq->bWrite) //response for a write cmd
     {
         m_rqs->FreeRequest (localrq);
         return;
@@ -521,7 +546,7 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
     unsigned char           tid;
     qemu_wrapper_request   *localrq;
 
-    if (unblocking_write)
+    if (m_unblocking_write)
         localrq = m_rqs->GetNewRequest (1);
     else
         localrq = m_rqs->GetNewRequest (0);
@@ -557,7 +582,7 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     unsigned char                   tid;
     qemu_wrapper_request            *localrq;
 
-    if (unblocking_write)
+    if (m_unblocking_write)
         localrq = m_rqs->GetNewRequest (bIO);
     else
         localrq = m_rqs->GetNewRequest (0);
@@ -570,7 +595,7 @@ void qemu_cpu_wrapper::write (unsigned long addr,
 
     send_req(tid, addr, (unsigned char *)&data, nbytes, 1);
 
-    if (!unblocking_write)
+    if (!m_unblocking_write)
     {
         if (!localrq->bDone)
             wait (localrq->evDone);
