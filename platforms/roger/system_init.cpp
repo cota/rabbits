@@ -153,13 +153,32 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
 
 static unsigned long bootloader[] = 
 {
-  0xe3a00000, /* mov     r0, #0 */
-  0xe3a01000, /* mov     r1, #0x?? */
-  0xe3811c00, /* orr     r1, r1, #0x??00 */
-  0xe59f2000, /* ldr     r2, [pc, #0] */
-  0xe59ff000, /* ldr     pc, [pc, #0] */
-  0, /* Address of kernel args.  Set by integratorcp_init.  */
-  0  /* Kernel entry point.  Set by integratorcp_init.  */
+    0xee101fb0,                                 /* mrc 15, 0, r1, cr0, cr0, {5}*/
+    0xe211100f,                                 /* ands    r1, r1, #15 ; 0xf*/
+    0x159f3004,                                 /* ldrne   r3, [pc, #4]*/
+    0x0a000001,                                 /* beq pc + 4*/
+    0xe12fff13,                                 /* bx  r3*/
+    0x85000000,                                 /* <second cpus boot addr>*/
+    0xe3a00000,                                 /* mov     r0, #0 */
+    0xe3a01000 | (BOARD_ID & 0xff),             /* mov     r1, #0x?? */
+    0xe3811c00 | ((BOARD_ID >> 8) & 0xff),      /* orr     r1, r1, #0x??00 */
+    0xe59f2000,                                 /* ldr     r2, [pc, #0] */
+    0xe59ff000,                                 /* ldr     pc, [pc, #0] */
+    KERNEL_ARGS_ADDR,                           /* <address of kernel args>*/
+    KERNEL_LOAD_ADDR                            /* <kernel entry point>*/
+};
+
+/* Entry point for secondary CPUs.
+Issue WFI until start address is written to system controller.  */
+static unsigned long smpboot[] =
+{
+  0xe3a00482, /* mov     r0, #0x82000000 */
+  0xe3800084, /* orr     r0, #0x84 */
+  0xe320f003, /* wfi */
+  0xe5901000, /* ldr     r1, [r0] */
+  0xe3110003, /* tst     r1, #3 */
+  0x1afffffb, /* bne     <wfi> */
+  0xe12fff11  /* bx      r1 */
 };
 
 static void set_kernel_args (unsigned long ram_size, int initrd_size,
@@ -211,11 +230,8 @@ void arm_load_kernel (init_struct *is)
 {
     systemc_load_image (is->kernel_filename, KERNEL_LOAD_ADDR);
 
-    bootloader[1] |= BOARD_ID & 0xff;
-    bootloader[2] |= (BOARD_ID >> 8) & 0xff;
-    bootloader[5] = KERNEL_ARGS_ADDR;
-    bootloader[6] = KERNEL_LOAD_ADDR;
     memcpy (systemc_get_sram_mem_addr (), bootloader, sizeof (bootloader));
+    memcpy (systemc_get_sram_mem_addr () + is->ramsize, smpboot, sizeof (smpboot));
 
     int     initrd_size = systemc_load_image (is->initrd_filename, INITRD_LOAD_ADDR);
     if (-1 == initrd_size)
