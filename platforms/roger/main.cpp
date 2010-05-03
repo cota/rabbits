@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include <system_init.h>
 #include <systemc.h>
@@ -52,23 +53,23 @@ mem_device          *ram = NULL;
 interconnect        *onoc = NULL;
 slave_device        *slaves[50];
 int                 nslaves = 0;
+init_struct         is;
 
 int sc_main (int argc, char ** argv)
 {
     int             i;
 
-    init_struct     is;
     memset (&is, 0, sizeof (init_struct));
     is.cpu_family = "arm";
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 1;
+    is.no_cpus = 3;
     is.ramsize = 128 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
 
     //slaves
-    ram = new mem_device ("dynamic", is.ramsize);
+    ram = new mem_device ("dynamic", is.ramsize + 0x1000);
     tg_device           *tg = new tg_device ("tg", "videoin.jpg");
     ramdac_device       *ramdac = new ramdac_device ("ramdac");
     tty_serial_device   *tty = new tty_serial_device ("tty");
@@ -89,7 +90,7 @@ int sc_main (int argc, char ** argv)
         slaves[nslaves++] = timers[i]; //5 + i
     };
     int                         no_irqs = ntimers + 1;
-    int                         int_cpu_mask [] = {1, 0};
+    int                         int_cpu_mask [] = {1, 0, 0, 0, 0, 0};
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
         timers[i]->irq (wires_irq_qemu[i]);
@@ -164,6 +165,71 @@ extern "C"
 {
 
 unsigned char   dummy_for_invalid_address[256];
+struct mem_exclusive_t {unsigned long addr; int cpu;} mem_exclusive[100];
+int no_mem_exclusive = 0;
+
+void memory_mark_exclusive (int cpu, unsigned long addr)
+{
+    int             i;
+
+    for (i = 0; i < no_mem_exclusive; i++)
+        if (addr == mem_exclusive[i].addr)
+            break;
+    
+    if (i >= no_mem_exclusive)
+    {
+        mem_exclusive[no_mem_exclusive].addr = addr;
+        mem_exclusive[no_mem_exclusive].cpu = cpu;
+        no_mem_exclusive++;
+
+        if (no_mem_exclusive > is.no_cpus)
+        {
+            printf ("Warning: number of elements in the exclusive list (%d) > cpus (%d) (list: ",
+                no_mem_exclusive, is.no_cpus);
+            for (i = 0; i < no_mem_exclusive; i++)
+                printf ("%lx ", mem_exclusive[i].addr);
+            printf (")\n");
+            if (is.gdb_port > 0)
+                kill (0, SIGINT);
+
+        }
+    }
+}
+
+int memory_test_exclusive (int cpu, unsigned long addr)
+{
+    int             i;
+    for (i = 0; i < no_mem_exclusive; i++)
+        if (addr == mem_exclusive[i].addr)
+            return (cpu != mem_exclusive[i].cpu);
+    
+    return 1;
+}
+
+void memory_clear_exclusive (int cpu, unsigned long addr)
+{
+    int             i;
+    for (i = 0; i < no_mem_exclusive; i++)
+        if (addr == mem_exclusive[i].addr)
+        {
+            for (; i < no_mem_exclusive - 1; i++)
+            {
+                mem_exclusive[i].addr = mem_exclusive[i + 1].addr;
+                mem_exclusive[i].cpu = mem_exclusive[i + 1].cpu;
+            }
+            
+            no_mem_exclusive--;
+            return;
+        }
+
+    printf ("Warning in %s: cpu %d not in the exclusive list: ",
+        __FUNCTION__, cpu);
+    for (i = 0; i < no_mem_exclusive; i++)
+        printf ("(%lx, %d) ", mem_exclusive[i].addr, mem_exclusive[i].cpu);
+    printf ("\n");
+    if (is.gdb_port > 0)
+        kill (0, SIGINT);
+}
 
 unsigned char   *systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr)
 {
