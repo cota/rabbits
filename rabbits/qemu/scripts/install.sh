@@ -24,7 +24,7 @@ LOG_DIR=${HERE}/../logs
 
 cd ${HERE}/..
 
-git clone git://tima-sls.imag.fr/QEmu.git -b 0.9.1-comcas-light qemu-0.9.1
+git clone git://tima-sls.imag.fr/QEmu.git -b 0.9.1-rabbits qemu-0.9.1
 
 mkdir -p ${LOG_DIR}
 
