@@ -53,7 +53,6 @@ extern "C"
                                            unsigned long *ns, int bIO);    
     extern unsigned long long systemc_qemu_get_time ();
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
-    extern void systemc_invalidate_address (void *qemu_instance, unsigned long addr);
     extern unsigned long systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this);
     extern void memory_mark_exclusive (int cpu, unsigned long addr);
     extern int memory_test_exclusive (int cpu, unsigned long addr);
@@ -107,7 +106,6 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     sc_exp_fcs.systemc_qemu_write_memory = (systemc_qemu_write_memory_fc_t) systemc_qemu_write_memory;
     sc_exp_fcs.systemc_qemu_get_time = (systemc_qemu_get_time_fc_t) systemc_qemu_get_time;
     sc_exp_fcs.systemc_get_mem_addr = (systemc_get_mem_addr_fc_t) systemc_get_mem_addr;
-    sc_exp_fcs.systemc_invalidate_address = (systemc_invalidate_address_fc_t) systemc_invalidate_address;
     sc_exp_fcs.systemc_qemu_get_crt_thread = (systemc_qemu_get_crt_thread_fc_t) systemc_qemu_get_crt_thread;
     sc_exp_fcs.memory_mark_exclusive = memory_mark_exclusive;
     sc_exp_fcs.memory_test_exclusive = memory_test_exclusive;
@@ -387,22 +385,30 @@ void qemu_wrapper::set_int_enable (unsigned long val)
     m_interrupts_status &= m_interrupts_enable;
 }
 
+void
+qemu_wrapper::invalidate_address (unsigned long addr, unsigned int node_id)
+{
+    int             i, j;
+    qemu_wrapper    *qw;
+
+    for  (i = 0; i < qemu_wrapper::s_nwrappers; i++)
+    {
+        qw = qemu_wrapper::s_wrappers[i];
+        for (j = 0; j < qw->m_ncpu; j++)
+            if (qw->m_cpus[j]->m_node_id == node_id)
+                break;
+            qw->m_qemu_import.qemu_invalidate_address (
+                qw->m_qemu_instance, addr, j);
+    }
+}
+
+void invalidate_address (unsigned long addr, unsigned int node_id)
+{
+    qemu_wrapper::invalidate_address (addr, node_id);
+}
+
 extern "C"
 {
-
-    void
-    systemc_invalidate_address (void *qemu_instance, unsigned long addr)
-    {
-        int             i;
-        for  (i = 0; i < qemu_wrapper::s_nwrappers; i++)
-        {
-            if (qemu_instance != qemu_wrapper::s_wrappers[i]->m_qemu_instance)
-                qemu_wrapper::s_wrappers[i]->m_qemu_import.qemu_invalidate_address (
-                    qemu_wrapper::s_wrappers[i]->m_qemu_instance, addr);
-        }
-    }
-
-
     void
     qemu_wrapper_SLS_banner(void)
     {
@@ -412,7 +418,6 @@ extern "C"
                 "|                     Copyright (c) 2009 - 2010 Tima SLS                       |\n"
                 "================================================================================\n");
     }
-
 }
 
 /*

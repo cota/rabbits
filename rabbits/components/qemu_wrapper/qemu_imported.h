@@ -48,7 +48,7 @@ extern "C"
         unsigned long long *no_icache_miss,
         unsigned long long *no_uncached);
     typedef void            (*qemu_invalidate_address_fc_t) (void* instance, 
-                                                             unsigned long addr);
+                                                             unsigned long addr, int src_idx);
     typedef int             (*gdb_srv_start_and_wait_fc_t) (int port);
 
     //imported by QEMU
