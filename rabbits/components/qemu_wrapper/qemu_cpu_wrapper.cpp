@@ -478,10 +478,24 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
             s_addr_startup_secondary = data;
             break;
         case GENERATE_SWI:
+        {
+            #if 0
+            static int cnt = 0;
+            printf ("SWI data=%lu (%d)\n", data, ++cnt);
+            #endif
+
             m_port_access->generate_swi (data, 1);
+        }
             break;
         case SWI_ACK:
+        {
+            #if 0
+            static int cnt = 0;
+            printf ("\t\t\tACK cpu=%d, data=%lu (%d)\n", m_cpuindex, data, ++cnt);
+            #endif
+            
             m_port_access->swi_ack (m_cpuindex, data);
+        }
             break;
         default:
             cerr << "Error: Bad qemu_wrapper address " << std::hex << addr 
@@ -575,7 +589,6 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
 }
 
 
-
 void qemu_cpu_wrapper::write (unsigned long addr,
                               unsigned long data, unsigned char nbytes, int bIO)
 {
@@ -605,6 +618,11 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     return;
 }
 
+
+void qemu_cpu_wrapper::wait_wb_empty ()
+{
+    m_rqs->WaitWBEmpty ();
+}
 
 
 //template class qemu_cpu_wrapper< stbus_bca_request<64>, stbus_bca_response<64> >;
@@ -676,6 +694,12 @@ extern "C"
     systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this)
     {
         return _this->m_crt_cpu_thread;
+    }
+
+    void
+    wait_wb_empty (qemu_cpu_wrapper_t *_this)
+    {
+        _this->wait_wb_empty ();
     }
 }
 

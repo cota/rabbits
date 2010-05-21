@@ -1,8 +1,8 @@
 # Place here the path to the toolchain
-export RABBITS_XTOOLS=
+export RABBITS_XTOOLS=/home/gligor/lomosa/xtools/armgcc
 # Place here the prefix of the toolchain
 # arm-none-linux-gnueabi- for a arm-none-linux-gnueabi-gcc
-export RABBITS_CROSS_COMPILE=
+export RABBITS_CROSS_COMPILE=arm-none-linux-gnueabi-
 
 if [ -z "${RABBITS_XTOOLS}" ]; then
    echo "You should edit the soft_env file to change the RABBITS_XTOOLS value"

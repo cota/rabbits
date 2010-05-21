@@ -53,6 +53,7 @@ public:
     void consume_instruction_cycles_with_sync (unsigned long ns);
     void add_time_at_fv (unsigned long ns);
     uint64 get_no_instr ();
+    void wait_wb_empty ();
     void wakeup ();
 
 private:

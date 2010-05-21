@@ -57,6 +57,7 @@ extern "C"
     extern void memory_mark_exclusive (int cpu, unsigned long addr);
     extern int memory_test_exclusive (int cpu, unsigned long addr);
     extern void memory_clear_exclusive (int cpu, unsigned long addr);
+    extern void wait_wb_empty (qemu_cpu_wrapper_t *_this);
     extern unsigned long    no_cycles_cpu0;
 }
 
@@ -110,6 +111,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     sc_exp_fcs.memory_mark_exclusive = memory_mark_exclusive;
     sc_exp_fcs.memory_test_exclusive = memory_test_exclusive;
     sc_exp_fcs.memory_clear_exclusive = memory_clear_exclusive;
+    sc_exp_fcs.wait_wb_empty = (wait_wb_empty_fc_t) wait_wb_empty;
     sc_exp_fcs.no_cycles_cpu0 = &no_cycles_cpu0;
 
     m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu, firstcpuindex, cpumodel,
