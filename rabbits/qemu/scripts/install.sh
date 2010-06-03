@@ -18,6 +18,11 @@
 # along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+failwith () {
+    printf "$@"
+    exit 1
+}
+
 HERE=`pwd`
 
 LOG_DIR=${HERE}/../logs
@@ -40,7 +45,7 @@ cd ${QEMU_DIR}
 fi
 
 echo "Configuring Qemu ..."
-./configure &> ${LOG_DIR}/config.log   || exit
+./configure &> ${LOG_DIR}/config.log   || failwith "Configure QEmu failed. Please read the log for details:\n%s\n" "${LOG_DIR}/config.log"
 
 echo "Compiling and installing Qemu ..."
-make &> ${LOG_DIR}/make.log          || exit
+make &> ${LOG_DIR}/make.log          || failwith "Compilation of QEmu failed. Please read the log for details:\n%s\n" "${LOG_DIR}/make.log"
