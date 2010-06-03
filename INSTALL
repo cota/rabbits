@@ -15,9 +15,9 @@ If success, on termination you will have the complete framework available.
 Prerequisite.
 -------------
 
-<RABBITS_ROOT_DIR>/bashrc
+<RABBITS_ROOT_DIR>/rabbits_env
 
-At the root of the RABBITS project dir, you will find bashrc file. This file
+At the root of the RABBITS project dir, you will find rabbits_env file. This file
 contains all environment variables needed by the framework to work properly. So
 follow the white rabbit and fill it with proper values, and then source it.
 
