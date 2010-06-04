@@ -23,4 +23,4 @@ rm -fr qemu_f*.lst
 
 export PATH=$PWD/../../rabbits/tools:$PATH
 ./run.x -cpu arm11mpcore -kernel soft/linux/linux/arch/arm/boot/zImage \
-	-initrd soft/initrd/initrd.gz $*
+	-initrd soft/initrd/initrd.gz "$@"
