@@ -61,12 +61,12 @@ void timer_device::write (unsigned long ofs, unsigned char be, unsigned char *da
             divisor = val1;
             ns_period = ((double)1000000000) / SYSTEM_CLOCK_FV * divisor;
             divisor_changed = true;
-            ev_wake.notify_delayed ();
+            ev_wake.notify(SC_ZERO_TIME);
         }
         else
         {
             DCOUT << "HW " << name () << " ACK" << endl;
-            irq = false;
+            ev_wake.notify();
         }
         break;
 
@@ -142,6 +142,8 @@ void timer_device::timer_thread ()
             if (bOneShot)
                 divisor = 0;
             irq = true;
+            wait(ev_wake);
+            irq = false;
         }
     }
 }

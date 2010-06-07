@@ -45,20 +45,14 @@ interconnect_slave::~interconnect_slave ()
 //put interface
 void interconnect_slave::put (vci_response &rsp)
 {
-    if (m_queue_responses->canWrite == false)
-        wait (m_queue_responses->canWrite.posedge_event ());
     m_queue_responses->Write (rsp);
-
     wait (0, SC_NS);
 }
 
 //get interface
 void interconnect_slave::get (vci_request &req)
 {	
-    if (m_queue_requests->canRead == false)
-        wait (m_queue_requests->canRead.posedge_event ());
     req = m_queue_requests->Read ();
-
     wait (0, SC_NS);
 }
 
@@ -71,8 +65,6 @@ void interconnect_slave::dispatch_responses_thread ()
 
     while (1)
     {
-        if (m_queue_responses->canRead == false)
-            wait (m_queue_responses->canRead.posedge_event ());
         rsp = m_queue_responses->Read ();
 
         wait (1, SC_NS);

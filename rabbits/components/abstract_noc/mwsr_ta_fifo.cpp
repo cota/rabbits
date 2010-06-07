@@ -40,15 +40,13 @@ ITEM& mwsr_ta_fifo<ITEM>::Read ()
 {
     if (IsEmpty ())
     {
-        printf ("Error: %s - empty.\n", __PRETTY_FUNCTION__);
-        exit (1);
+        wait(canRead);
     }
 
     int				pos = m_idxRead;
     m_idxRead = (m_idxRead + 1) % m_size;
-    if (IsEmpty ())
-        canRead = false;
-    canWrite = true;
+
+    canWrite.notify();
 
     return m_data[pos];
 }
@@ -58,14 +56,13 @@ void mwsr_ta_fifo<ITEM>::Write (ITEM& p)
 {
     while (IsFull ())
     {
-        wait (canWrite.posedge_event ());
+        wait (canWrite);
     }
 
     m_data[m_idxWrite] = p;
     m_idxWrite = (m_idxWrite + 1) % m_size;
-    if (IsFull ())
-        canWrite = false;
-    canRead = true;
+
+    canRead.notify();
 }
 
 template <typename ITEM>
@@ -73,8 +70,6 @@ void mwsr_ta_fifo<ITEM>::Reset ()
 {
     m_idxRead = 0;
     m_idxWrite = 0;
-    canRead = false;
-    canWrite = true;
 }
 
 template <typename ITEM>
