@@ -22,13 +22,22 @@ HERE=`pwd`
 
 LOG_DIR=${HERE}/../logs
 
+QEMU_DIR=qemu-0.9.1
+QEMU_BRANCH=0.9.1-rabbits
+SLS_REPO=git://tima-sls.imag.fr/QEmu.git
+
 cd ${HERE}/..
-
-git clone git://tima-sls.imag.fr/QEmu.git -b 0.9.1-rabbits qemu-0.9.1
-
 mkdir -p ${LOG_DIR}
 
-cd qemu-0.9.1
+if [ -e ${QEMU_DIR} ]; then
+echo "Pulling git (sls_repository)"
+cd ${QEMU_DIR}
+git pull -q origin ${QEMU_BRANCH}
+else
+echo "Cloning git (sls_repository)"
+git clone -q ${SLS_REPO} -b ${QEMU_BRANCH} ${QEMU_DIR}
+cd ${QEMU_DIR}
+fi
 
 echo "Configuring Qemu ..."
 ./configure &> ${LOG_DIR}/config.log   || exit
