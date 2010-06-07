@@ -21,6 +21,10 @@ building process.
 On top of these scripts, you will have to install beforehand a 
 cross compilation toolchain. We suggest you use the codesourcery
 one, which is a lazy yet efficient way to accomplish this step.
+You can download it from http://www.codesourcery.com/sgpp/lite/arm
+(you need to chose the "GNU/Linux" Target OS, providing
+arm-none-linux-gnueabi-* executables, or set RABBITS_CROSS_COMPILE
+accordingly in soft_env).
 
 Once the toolchain is installed you will have to set correct values
 in the soft_env file. This file will be sourced so that all building
