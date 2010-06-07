@@ -34,6 +34,7 @@
 
 mem_device::mem_device (const char *_name, unsigned long _size) : slave_device (_name)
 {
+    m_write_invalidate = true;
     mem = NULL;
     size = _size;
     mem = new unsigned char [size];

@@ -44,6 +44,7 @@ namespace noc
     {
     public:
         uint32_t    address;
+        uint32_t    initial_address;
         uint8_t     be;
         uint8_t     cmd;
         bool        contig;

@@ -19,8 +19,11 @@
 
 #include <slave_device.h>
 
+void invalidate_address (unsigned long addr, unsigned int node_id);
+
 slave_device::slave_device (sc_module_name module_name) : sc_module (module_name)
 {
+    m_write_invalidate = false;
     SC_THREAD (request_thread);
 }
 
@@ -58,6 +61,8 @@ void slave_device::request_thread ()
         switch(cmd){
         case CMD_WRITE:
             this->rcv_rqst (addr, be, req.wdata, 1);
+            if (m_write_invalidate)
+                invalidate_address (req.initial_address, req.srcid);
             break;
         case CMD_READ:
             this->rcv_rqst (addr, be, rsp.rdata, 0);

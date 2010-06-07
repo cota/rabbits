@@ -117,6 +117,7 @@ void interconnect_master::dispatch_requests_thread ()
             exit (1);
         }
 
+        req.initial_address = req.address;
         req.address = addr - m_map[i].begin_address + m_map[i].intern_offset;
 
         slave->add_request (req);

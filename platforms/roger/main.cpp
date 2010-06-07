@@ -90,7 +90,7 @@ int sc_main (int argc, char ** argv)
         slaves[nslaves++] = timers[i]; //5 + i
     };
     int                         no_irqs = ntimers + 1;
-    int                         int_cpu_mask [] = {1, 0, 0, 0, 0, 0};
+    int                         int_cpu_mask [] = {1, 1, 0, 0, 0, 0};
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
         timers[i]->irq (wires_irq_qemu[i]);
@@ -116,7 +116,7 @@ int sc_main (int argc, char ** argv)
     if (is.gdb_port > 0)
     {
         qemu1.m_qemu_import.gdb_srv_start_and_wait (is.gdb_port);
-        qemu1.set_unblocking_write (0);
+        //qemu1.set_unblocking_write (0);
     }
 
     sc_start ();
@@ -172,6 +172,8 @@ void memory_mark_exclusive (int cpu, unsigned long addr)
 {
     int             i;
 
+    addr &= 0xFFFFFFFC;
+
     for (i = 0; i < no_mem_exclusive; i++)
         if (addr == mem_exclusive[i].addr)
             break;
@@ -199,6 +201,9 @@ void memory_mark_exclusive (int cpu, unsigned long addr)
 int memory_test_exclusive (int cpu, unsigned long addr)
 {
     int             i;
+
+    addr &= 0xFFFFFFFC;
+
     for (i = 0; i < no_mem_exclusive; i++)
         if (addr == mem_exclusive[i].addr)
             return (cpu != mem_exclusive[i].cpu);
@@ -209,6 +214,9 @@ int memory_test_exclusive (int cpu, unsigned long addr)
 void memory_clear_exclusive (int cpu, unsigned long addr)
 {
     int             i;
+
+    addr &= 0xFFFFFFFC;
+
     for (i = 0; i < no_mem_exclusive; i++)
         if (addr == mem_exclusive[i].addr)
         {

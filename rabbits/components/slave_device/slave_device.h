@@ -49,6 +49,7 @@ public:
 
     vci_response                                        rsp;
     bool                                                bProcessing_rq;
+    bool                                                m_write_invalidate;
 
 };
 

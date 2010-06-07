@@ -48,6 +48,7 @@ public:
     qemu_wrapper_request* GetNewRequest (int bWaitEmpty);
     qemu_wrapper_request* GetRequestByTid (unsigned char tid);
     void FreeRequest (qemu_wrapper_request *rq);
+    void WaitWBEmpty ();
 
 private:
     qemu_wrapper_request		*m_headFree;

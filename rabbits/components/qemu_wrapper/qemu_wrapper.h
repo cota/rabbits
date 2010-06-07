@@ -42,6 +42,7 @@ public:
 
     //inline qemu_cpu_wrapper <stbus_bca_request<64>, stbus_bca_response<64> > * get_cpu (int i) {return m_cpus[i];}
     inline qemu_cpu_wrapper_t * get_cpu (int i) {return m_cpus[i];}
+    static void invalidate_address (unsigned long addr, unsigned int node_id);
 
     //qemu_wrapper_access_interface
     virtual unsigned long get_no_cpus  ();
