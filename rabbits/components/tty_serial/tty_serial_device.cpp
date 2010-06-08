@@ -97,7 +97,7 @@ void tty_serial_device::read_thread ()
                 state.read_count++;
 
                 state.int_level |= TTY_INT_READ;
-                irq_update ();
+                irq_update.notify ();
             }
         }
     }
@@ -149,6 +149,7 @@ tty_serial_device::tty_serial_device (sc_module_name _name) : slave_device (_nam
     }
 
     SC_THREAD (read_thread);
+    SC_THREAD (irq_update_thread);
 }
 
 tty_serial_device::~tty_serial_device ()
@@ -157,15 +158,21 @@ tty_serial_device::~tty_serial_device ()
     close_ttys ();
 }
 
-void tty_serial_device::irq_update ()
+//void tty_serial_device::irq_update ()
+void tty_serial_device::irq_update_thread ()
 {
     unsigned long       flags;
 
-    flags = state.int_level & state.int_enabled;
+    while(1) {
 
-    DPRINTF ("%s - %s\n", __FUNCTION__, (flags != 0) ? "1" : "0");
+        wait(irq_update);
 
-    irq_line = (flags != 0);
+        flags = state.int_level & state.int_enabled;
+
+        DPRINTF ("%s - %s\n", __FUNCTION__, (flags != 0) ? "1" : "0");
+        
+        irq_line = (flags != 0);
+    }
 }
 
 void tty_serial_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
@@ -196,7 +203,7 @@ void tty_serial_device::write (unsigned long ofs, unsigned char be, unsigned cha
 
     case 1: //set int enable
         state.int_enabled = value;
-        irq_update ();
+        irq_update.notify ();
         break;
 
     default:
@@ -238,7 +245,7 @@ void tty_serial_device::read (unsigned long ofs, unsigned char be, unsigned char
             if (0 == state.read_count)
             {
                 state.int_level &= ~TTY_INT_READ;
-                irq_update ();
+                irq_update.notify ();
             }
 
             evRead.notify (0, SC_NS);

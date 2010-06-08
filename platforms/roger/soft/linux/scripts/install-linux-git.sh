@@ -36,9 +36,15 @@ cd ..
 #echo "Uncompressing the kernel ..."
 #tar jxf ${LINUX_ARCHIVE} || exit
 
-rm -fr ${LINUX_DIR}
-
-git clone ${KERNEL_REP} -b roger ${LINUX_DIR}
+if [ -d ${LINUX_DIR}/.git/ ]; then
+    (
+	cd ${LINUX_DIR}
+	git pull ${KERNEL_REP} roger
+    )
+else
+    rm -fr ${LINUX_DIR}
+    git clone ${KERNEL_REP} -b roger ${LINUX_DIR}
+fi
 
 #echo "Applying patches ..."
 #if [ -e ${PATCH_DIR}/${LINUX_VER} ]; then

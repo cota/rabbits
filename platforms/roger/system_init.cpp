@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <system_init.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #define BOARD_ID            2339
 #define KERNEL_ARGS_ADDR    0x100
@@ -149,6 +151,21 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
 			 break;
         }
     }
+}
+
+int check_init (init_struct *is)
+{
+    int error = 0;
+    struct stat s;
+    if (!is->kernel_filename) {
+        printf("Please specify kernel name with -kernel\n");
+        error = 1;
+    } else if (stat(is->kernel_filename, &s) != 0) {
+        printf("cannot stat kernel file '%s': %s\n", is->kernel_filename, strerror(errno));
+        error = 1;
+    }
+
+    return error;
 }
 
 static unsigned long bootloader[] = 

@@ -1,0 +1,26 @@
+# Place here the path to the toolchain
+export RABBITS_XTOOLS=
+# Place here the prefix of the toolchain
+# arm-none-linux-gnueabi- for a arm-none-linux-gnueabi-gcc
+export RABBITS_CROSS_COMPILE=
+
+# Version of libc and ld (file should be named ld-${RABBITS_LIBC_VERSION}.so)
+export RABBITS_LIBC_VERSION=2.11.1
+
+if [ -z "${RABBITS_XTOOLS}" ]; then
+   echo "You should edit the soft_env file to change the RABBITS_XTOOLS value"
+fi
+
+if [ -z "${RABBITS_CROSS_COMPILE}" ]; then
+   echo "You should edit the soft_env file to change the RABBITS_CROSS_COMPILE value"
+fi
+
+if ! [ -x "${RABBITS_XTOOLS}/bin/${RABBITS_CROSS_COMPILE}gcc" ]; then	
+   echo "Cannot find cross-compiled gcc. Please edit the soft_env file."
+   echo "Tried: ${RABBITS_XTOOLS}/bin/${RABBITS_CROSS_COMPILE}gcc"
+fi
+
+if ! [ -x "${RABBITS_XTOOLS}/`basename ${RABBITS_CROSS_COMPILE} -`/libc/lib/ld-${RABBITS_LIBC_VERSION}.so" ]; then
+   echo "Cannot find libc. Please edit the soft_env file."
+   echo "Tried: ${RABBITS_XTOOLS}/`basename ${RABBITS_CROSS_COMPILE} -`/libc/lib/ld-${RABBITS_LIBC_VERSION}.so"
+fi

@@ -39,8 +39,8 @@ private:
     bool IsFull ();
 
 public:
-    sc_signal <bool>			canRead;
-    sc_signal <bool>			canWrite;
+	sc_event					canRead;
+	sc_event					canWrite;
 
 private:
     ITEM						*m_data;

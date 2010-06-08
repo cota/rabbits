@@ -53,8 +53,10 @@ private:
     void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
     void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
 
-    void irq_update ();
+    sc_event irq_update;
+    //void irq_update ();
     void read_thread ();
+    void irq_update_thread();
 
 public:
     //ports

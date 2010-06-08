@@ -67,6 +67,8 @@ int sc_main (int argc, char ** argv)
     is.no_cpus = 3;
     is.ramsize = 128 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
+    if (check_init (&is) != 0)
+        return 1;
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
@@ -119,7 +121,7 @@ int sc_main (int argc, char ** argv)
         //qemu1.set_unblocking_write (0);
     }
 
-    sc_start (-1);
+    sc_start ();
 
     return 0;
 }

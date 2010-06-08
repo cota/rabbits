@@ -77,20 +77,14 @@ interconnect_master::~interconnect_master ()
 //put interface
 void interconnect_master::put (vci_request &req)
 {
-    if (m_queue_requests->canWrite == false)
-        wait (m_queue_requests->canWrite.posedge_event ());
     m_queue_requests->Write (req);
-
     wait (0, SC_NS);
 }
 
 //get interface
 void interconnect_master::get (vci_response &rsp)
 {
-    if (m_queue_responses->canRead == false)
-        wait (m_queue_responses->canRead.posedge_event ());
     rsp = m_queue_responses->Read ();
-
     wait (0, SC_NS);
 }
 
@@ -103,8 +97,6 @@ void interconnect_master::dispatch_requests_thread ()
 
     while (1)
     {
-        if (m_queue_requests->canRead == false)
-            wait (m_queue_requests->canRead.posedge_event ());
         req = m_queue_requests->Read ();
 
         wait (3, SC_NS);
