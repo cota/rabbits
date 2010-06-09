@@ -44,13 +44,12 @@ extern "C"
     void qemu_wrapper_SLS_banner(void) __attribute__((constructor));
 
     extern void systemc_qemu_wakeup (qemu_cpu_wrapper_t *_this);
-    extern void systemc_qemu_consume_instruction_cycles (qemu_cpu_wrapper_t *_this,
-                                                         int ninstr, unsigned long *ns);
+    extern void systemc_qemu_consume_instruction_cycles (
+        qemu_cpu_wrapper_t *_this, int ninstr);
     extern unsigned long systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, 
-                                                   unsigned long address, unsigned char nbytes, unsigned long *ns, int bIO);
+        unsigned long address, unsigned char nbytes, int bIO);
     extern void systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, 
-                                           unsigned long address, unsigned long data, unsigned char nbytes,
-                                           unsigned long *ns, int bIO);    
+        unsigned long address, unsigned long data, unsigned char nbytes, int bIO);
     extern unsigned long long systemc_qemu_get_time ();
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
     extern unsigned long systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this);

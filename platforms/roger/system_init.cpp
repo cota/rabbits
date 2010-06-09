@@ -165,6 +165,11 @@ int check_init (init_struct *is)
         error = 1;
     }
 
+    if (is->initrd_filename && stat(is->initrd_filename, &s) != 0) {
+        printf("cannot stat initrd file '%s': %s\n", is->kernel_filename, strerror(errno));
+        error = 1;
+    }
+
     return error;
 }
 

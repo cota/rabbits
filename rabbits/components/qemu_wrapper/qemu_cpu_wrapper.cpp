@@ -638,20 +638,17 @@ extern "C"
     }
 
     void
-    systemc_qemu_consume_instruction_cycles (qemu_cpu_wrapper_t *_this,
-                                             int ninstr, unsigned long *ns)
+    systemc_qemu_consume_instruction_cycles (
+        qemu_cpu_wrapper_t *_this, int ninstr)
     {
-        unsigned long long				starttime = sc_time_stamp ().value ();
-
         _this->consume_instruction_cycles_with_sync (ninstr);
         if (!_this->m_cpuindex)
             no_cycles_cpu0 += ninstr;
-        *ns += (sc_time_stamp ().value () - starttime) / 1000;
     }
 
     unsigned long
     systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
-                              unsigned char nbytes, unsigned long *ns, int bIO)
+                              unsigned char nbytes, int bIO)
     {
         unsigned long                   ret;
         unsigned long long              diff, starttime = sc_time_stamp ().value ();
@@ -660,17 +657,14 @@ extern "C"
 
         diff = sc_time_stamp ().value () - starttime;
         if (diff)
-        {
             _this->add_time_at_fv (diff);
-            *ns += diff / 1000;
-        }
 
         return ret;
     }
 
     void
     systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
-                               unsigned long data, unsigned char nbytes, unsigned long *ns, int bIO)
+        unsigned long data, unsigned char nbytes, int bIO)
     {
         unsigned long long          diff, starttime = sc_time_stamp ().value ();
 
@@ -680,7 +674,6 @@ extern "C"
         if (diff)
         {
             _this->add_time_at_fv (diff);
-            *ns += diff / 1000;
         }
     }
 
