@@ -168,7 +168,7 @@ void ramdac_device::viewer ()
         if (execlp ("xramdac", "xramdac", NULL) == -1)
         {
             perror ("viewer: execlp failed");
-            exit (1);
+            _exit (1);
         }
     }
     if (pid == -1)

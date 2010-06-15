@@ -113,6 +113,8 @@ tty_serial_device::tty_serial_device (sc_module_name _name) : slave_device (_nam
     signal (SIGHUP, sig_hup);
     atexit (close_ttys);
 
+    signal (SIGPIPE, SIG_IGN);
+
     if (pipe (ppout) < 0)
     {
         cerr << name () << " can't open out pipe!" << endl;
@@ -138,13 +140,11 @@ tty_serial_device::tty_serial_device (sc_module_name _name) : slave_device (_nam
                     "-sb","-sl","1000",
                     "-l", "-lf", "logCPUs",
                     "-n", "Console", "-T", "Console",
-                    "-e",
-                    "tty_term_rw",
-                    spipeout, spipein,
+                    "-e", "tty_term_rw", spipeout, spipein,
                     NULL) == -1)
         {
             perror ("tty_term: execlp failed!");
-            exit(1);
+            _exit(1);
         }
     }
 
