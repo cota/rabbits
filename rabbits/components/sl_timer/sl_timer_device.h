@@ -22,7 +22,7 @@
 
 #include <slave_device.h>
 
-enum soclib_timer_registers {
+enum sl_timer_registers {
     TIMER_VALUE    = 0,
     TIMER_MODE     = 1,
     TIMER_PERIOD   = 2,
@@ -30,7 +30,7 @@ enum soclib_timer_registers {
     TIMER_SPAN     = 4,
 };
 
-enum soclib_timer_mode {
+enum sl_timer_mode {
 	TIMER_RUNNING = 1,
 	TIMER_IRQ_ENABLED = 2,
 };
@@ -55,19 +55,26 @@ private:
     void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
     void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
 
-    void timer_thread ();
+    void sl_timer_thread ();
+    void irq_update_thread ();
+
 
 public:
     //ports
     sc_out<bool>        irq;
 
 private:
-    unsigned long       divisor;
-    double              ns_period;
+    uint32_t            m_period;
+    uint32_t            m_mode;
+    double              m_ns_period;
     sc_event            ev_wake;
-    unsigned long       high_ticks;
-    bool                divisor_changed;
-    bool                bOneShot;
+    sc_event            ev_irq_update;
+    
+    uint64_t            m_last_period;
+
+    bool                m_irq;
+    bool                m_config_mod;
+
 };
 
 #endif

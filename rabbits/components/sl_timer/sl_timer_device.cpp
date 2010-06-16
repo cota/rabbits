@@ -35,13 +35,17 @@
 
 sl_timer_device::sl_timer_device (sc_module_name module_name) : slave_device (module_name)
 {
-    divisor = 0;
-    ns_period = 0;
-    high_ticks = 0xFFFFFFFF;
-    divisor_changed = false;
-    bOneShot = false;
+
+    m_period    = 0;
+    m_mode      = 0;
+    m_ns_period = 0;
+    m_last_period = 0;
+    m_irq = false;
+    m_config_mod = false;
 
     SC_THREAD (sl_timer_thread);
+    SC_THREAD (irq_update_thread);
+    
 }
 
 sl_timer_device::~sl_timer_device ()
@@ -55,29 +59,37 @@ void sl_timer_device::write (unsigned long ofs, unsigned char be, unsigned char 
 
     switch (ofs)
     {
-    case 0x00:
-        if (val1 != 0xFFFFFFFF)
-        {
-            divisor = val1;
-            ns_period = ((double)1000000000) / SYSTEM_CLOCK_FV * divisor;
-            divisor_changed = true;
-            ev_wake.notify(SC_ZERO_TIME);
-        }
-        else
-        {
-            DCOUT << "HW " << name () << " ACK" << endl;
+    case TIMER_VALUE:
+        DPRINTF("Unsupported write to VALUE register\n");
+        break;
+
+    case TIMER_MODE:
+        DPRINTF("Mode write : %x\n", val1); 
+        if((m_mode ^ val1) & 0x1){
+            m_config_mod = true;
+            m_mode = val1 & 0x3;
             ev_wake.notify();
+        }else{
+            m_mode = *data & 0x3;
         }
         break;
 
-    case 0x08:
-        bOneShot = (val1 != 0);
+    case TIMER_PERIOD:
+        m_period = val1;
+        m_ns_period = ((double)1000000000) / SYSTEM_CLOCK_FV * m_period;
+        m_config_mod = true;
+        ev_wake.notify();
+        break;
+
+    case TIMER_RESETIRQ:
+        m_irq = false;
+        ev_irq_update.notify();
         break;
 
     default:
-        printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
-                name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
-                (unsigned int) *((unsigned long*)data + 0), (unsigned int) *((unsigned long*)data + 1));
+        DPRINTF ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
+                 name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
+                 (unsigned int) *((unsigned long*)data + 0), (unsigned int) *((unsigned long*)data + 1));
         exit (1);
         break;
     }
@@ -87,33 +99,30 @@ void sl_timer_device::write (unsigned long ofs, unsigned char be, unsigned char 
 void sl_timer_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
     int             i;
+    uint32_t  *val = (uint32_t *)data;
 
-    *((unsigned long *)data + 0) = 0;
+    val = 0;
     *((unsigned long *)data + 1) = 0;
 
     switch (ofs)
     {
-    case 0x00:
-        if (be == 0x0F)
-        {
-            *((unsigned long *)data + 0) = 1;
-        }
-        else
-        {
-            unsigned long long ticks =
-                ((sc_time_stamp ().value () / 1000) * (SYSTEM_CLOCK_FV/1000000)) / 1000;
-            *((unsigned long *)data + 1) = (unsigned long) (ticks & 0xFFFFFFFF);
-            high_ticks = (unsigned long) ((ticks >> 32) & 0xFFFFFFFF);
-            //cout << "GetTime, hw time = " << sc_time_stamp () << "(ticks=" << ticks << ")" <<endl;
-        }
+    case TIMER_VALUE:
+        *val = (sc_time_stamp().value() - m_last_period) / 1000 / SYSTEM_CLOCK_FV;
         break;
-    case 0x08:
-        if (be == 0x0F)
-        {
-            *((unsigned long *)data + 0) = high_ticks;
-            high_ticks = 0xFFFFFFFF;
-            break;
-        }
+
+    case TIMER_MODE:
+        *val = m_mode;
+        break;
+
+    case TIMER_PERIOD:
+        *val = m_period;
+        break;
+
+    case TIMER_RESETIRQ:
+        *val = (m_irq == true);
+        break;
+
+
     default:
         printf ("Bad %s::%s ofs=0x%X, be=0x%X!\n",
                 name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
@@ -122,29 +131,41 @@ void sl_timer_device::read (unsigned long ofs, unsigned char be, unsigned char *
     bErr = false;
 }
 
-void sl_timer_device::sl_timer_thread ()
+void sl_timer_device::irq_update_thread ()
+{
+    unsigned long       flags;
+
+    while(1) {
+
+        wait(ev_irq_update);
+
+        irq = (m_irq == true);
+    }
+}
+
+void sl_timer_device::sl_timer_thread (void)
 {
     while (1)
     {
-        if (divisor == 0)
+        if (m_ns_period == 0){
             wait (ev_wake);
-        else
-            wait (ns_period, SC_NS, ev_wake);
+        }else{
+            DPRINTF("Timer running\n");
+            wait (m_ns_period, SC_NS, ev_wake);
+        }
 
-        if (divisor_changed)
-        {
-            divisor_changed = false;
-            irq = false;
+        if(m_config_mod){
+            DPRINTF("Timer Started/Stopped\n");
+            m_irq = 0;
+            ev_irq_update.notify();
+        }else{ // end of period
+            if(m_mode & TIMER_IRQ_ENABLED){
+                DPRINTF("Timer raise an IRQ\n");
+                m_irq = 1;
+                ev_irq_update.notify();
+            }
         }
-        else
-        {
-            DCOUT << "HW " << name () << ": set IRQ=1, time = " << sc_time_stamp () << endl;
-            if (bOneShot)
-                divisor = 0;
-            irq = true;
-            wait(ev_wake);
-            irq = false;
-        }
+        m_last_period = sc_time_stamp().value();
     }
 }
 

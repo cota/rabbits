@@ -33,8 +33,8 @@
 #include <qemu_cpu_wrapper.h>
 #include <qemu_wrapper_cts.h>
 #include <interconnect.h>
-#include <timer_device.h>
-#include <sl_tty_serial_device.h>
+#include <sl_timer_device.h>
+#include <sl_tty_device.h>
 #include <mem_device.h>
 #include <qemu_imported.h>
 
@@ -69,17 +69,17 @@ int sc_main (int argc, char ** argv)
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
-    sl_tty_serial_device   *tty = new sl_tty_serial_device ("tty");
+    sl_tty_device   *tty = new sl_tty_device ("tty", 1);
     slaves[nslaves++] = ram;        // 0
     slaves[nslaves++] = tty;        // 1
 
-    timer_device    *timers[1];
-    int              ntimers = sizeof (timers) / sizeof (timer_device *);
+    sl_timer_device    *timers[1];
+    int              ntimers = sizeof (timers) / sizeof (sl_timer_device *);
     for (i = 0; i < ntimers; i++)
     {
         char        buf[20];
         sprintf (buf, "timer_%d", i);
-        timers[i] = new timer_device (buf);
+        timers[i] = new sl_timer_device (buf);
         slaves[nslaves++] = timers[i]; //2 + i
     };
     int                         no_irqs = ntimers;
@@ -87,7 +87,7 @@ int sc_main (int argc, char ** argv)
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
         timers[i]->irq (wires_irq_qemu[i]);
-    tty->irq_line (wires_irq_qemu[no_irqs - 1]);
+    //tty->irq_line (wires_irq_qemu[no_irqs - 1]);
 
     //interconnect
     onoc = new interconnect ("interconnect", is.no_cpus, nslaves);

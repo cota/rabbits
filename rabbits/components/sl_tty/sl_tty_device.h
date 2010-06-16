@@ -34,12 +34,20 @@ enum sl_tty_registers {
 class sl_tty_device : public slave_device
 {
 public:
-    tty_device (const char *_name, int ntty);
-    virtual ~tty_device ();
+    sl_tty_device (const char *_name, int ntty);
+    virtual ~sl_tty_device ();
 
 public:
-    virtual void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
-    virtual void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
+    /*
+     *   Obtained from father
+     *   void send_rsp (bool bErr);
+     */
+    virtual void rcv_rqst (unsigned long ofs, unsigned char be,
+                           unsigned char *data, bool bWrite);
+
+private:
+    void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
+    void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
 
 private:
     int                 nb_tty;
