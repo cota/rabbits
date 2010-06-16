@@ -210,9 +210,12 @@ void qemu_wrapper::stnoc_interrupts_thread ()
         return;
 
     int                     i, cpu;
-    bool                    bup[m_ncpu], bdown[m_ncpu];
+    bool                    *bup, *bdown;
     unsigned long           val;
     my_sc_event_or_list     el (interrupt_ports[0].default_event ());
+
+    bup = new bool[m_ncpu];
+    bdown = new bool[m_ncpu];
 
     for (i = 1; i < m_ninterrupts; i++)
         el | interrupt_ports[i].default_event ();
@@ -276,13 +279,12 @@ void qemu_wrapper::stnoc_interrupts_thread ()
             {
                 DCOUT << "******INT SENT***** to cpu " << cpu << endl;
                 m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
-                for (i = 0; i < m_ncpu; i++)
-                    m_cpus[i]->wakeup ();
+                m_cpus[cpu]->wakeup ();
             }
             else
                 if (bdown[cpu] && !m_cpus[cpu]->m_swi)
                 {
-                    wait (2.5, SC_NS);
+                    //wait (2.5, SC_NS);
                     m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 0);
                 }
         }

@@ -1,4 +1,4 @@
-SUBDIRS = xterm_rw ramdac
+SUBDIRS = xterm_rw ramdac chronograph_src
 FLAGS_TO_PASS = 
 
 all:

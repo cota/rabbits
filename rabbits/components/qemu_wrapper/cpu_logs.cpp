@@ -24,24 +24,21 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <cpu_logs.h>
 #include <cfg.h>
 
 //#define TIME_AT_FV_LOG_FILE
-//#define TIME_AT_FV_LOG_GRF
+#define TIME_AT_FV_LOG_GRF
 
 #define FILE_TIME_AT_FV "logTimeAtFv"
 
+static int      s_pid_chrono_cpu_fvs[20];
+static int      s_nb_chrono_cpu_fvs = 0;
+
 static inline void writepipe (int &pipe, void* addr, int nbytes)
 {
-    static bool s_set_sigpipe_1 = false;
-    if (!s_set_sigpipe_1)
-    {
-        signal (SIGPIPE, SIG_IGN);
-        s_set_sigpipe_1 = true;
-    }
-
     if (pipe != 0 && nbytes != ::write (pipe, addr, nbytes))
         pipe = 0;
 }
@@ -73,13 +70,29 @@ cpu_logs::~cpu_logs ()
         m_hword_ncycles = NULL;
     }
 
-#ifdef TIME_AT_FV_LOG_FILE
+    #ifdef TIME_AT_FV_LOG_FILE
     if (file_fv)
     {
         fclose (file_fv);
         file_fv = NULL;
     }
-#endif
+    #endif
+}
+
+void close_chrono_cpu_fvs ()
+{
+    int         i, status;
+
+    if (!s_nb_chrono_cpu_fvs)
+        return;
+
+    for (i = 0; i < s_nb_chrono_cpu_fvs; i++)
+    {
+        kill (s_pid_chrono_cpu_fvs[i], SIGKILL);
+        ::wait (&status);
+    }
+
+    s_nb_chrono_cpu_fvs = 0;
 }
 
 void cpu_logs::InitInternal ()
@@ -89,6 +102,7 @@ void cpu_logs::InitInternal ()
     m_ns_time_at_fv = new unsigned long long [m_ncpu][NO_FV_LEVELS];
     m_ns_time_at_fv_prev = new unsigned long long [m_ncpu][NO_FV_LEVELS];
     m_hword_ncycles = new unsigned long [m_ncpu];
+
     for (cpu = 0; cpu < m_ncpu; cpu++)
     {
         for (i = 0; i < NO_FV_LEVELS; i++)
@@ -102,7 +116,7 @@ void cpu_logs::InitInternal ()
     m_pid_grf_run_at_fv = 0;
     file_fv = NULL;
 
-#ifdef TIME_AT_FV_LOG_FILE
+    #ifdef TIME_AT_FV_LOG_FILE
     //"time at fv" file
     if ((file_fv = fopen (FILE_TIME_AT_FV, "w")) == NULL)
     {
@@ -118,9 +132,9 @@ void cpu_logs::InitInternal ()
     fprintf (file_fv, 
              "                       \t           Fmax\t       Fmax*3/4\t"
              "         Fmax/2\t         Fmax/4\t              0\n");
-#endif
+    #endif
 
-#ifdef TIME_AT_FV_LOG_GRF
+    #ifdef TIME_AT_FV_LOG_GRF
     //"time at fv" grf
     int					apipe[2] = {0, 0};
     char				*ps, s[100];
@@ -130,6 +144,8 @@ void cpu_logs::InitInternal ()
     pipe (apipe);
     if ((m_pid_grf_run_at_fv = fork()) == 0)
     {
+        setpgrp();
+
         close (0);
         dup (apipe[0]);
         close (apipe[0]);
@@ -137,19 +153,24 @@ void cpu_logs::InitInternal ()
 
         int			fdnull = open ("/dev/null", O_WRONLY);
         close (1);
-        close (2);
         dup2 (1, fdnull);
-        dup2 (2, fdnull);
+//        close (2);
+//        dup2 (2, fdnull);
         close (fdnull);
 
         if (execlp ("chronograph", "chronograph", NULL) == -1)
         {
             perror ("chronograph: execlp failed");
-            exit (1);
+            _exit(1);
         }
     }
+
+    signal (SIGPIPE, SIG_IGN);
     close (apipe[0]);
     m_pipe_grf_run_at_fv = apipe[1];
+    s_pid_chrono_cpu_fvs[s_nb_chrono_cpu_fvs++] = m_pid_grf_run_at_fv;
+
+    atexit (close_chrono_cpu_fvs);
 
     // (4 (for string length) + (strlen + 1)) title of the graphs window
     ps = (char *) "Average frequency";
@@ -190,7 +211,7 @@ void cpu_logs::InitInternal ()
         writepipe (m_pipe_grf_run_at_fv, &val, 4);
         writepipe (m_pipe_grf_run_at_fv, s, val);
     }
-#endif
+    #endif
 }
 
 void cpu_logs::AddTimeAtFv (int cpu, int fvlevel, unsigned long long time)
@@ -221,8 +242,6 @@ unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
 
 void cpu_logs::UpdateFvGrf ()
 {
-    return;
-
     static int				cnt = 0;	
     if (++cnt < m_ncpu)
         return;
@@ -230,7 +249,7 @@ void cpu_logs::UpdateFvGrf ()
 
     int						i, cpu;
 
-#ifdef TIME_AT_FV_LOG_FILE
+    #ifdef TIME_AT_FV_LOG_FILE
     //"time at fv" file
     static int			cnt1 = 0;
     if (++cnt1 == 100)
@@ -246,19 +265,20 @@ void cpu_logs::UpdateFvGrf ()
             fprintf (file_fv, "\n");
         }
     }	
-#endif
+    #endif
 
-#ifdef TIME_AT_FV_LOG_GRF
+    #ifdef TIME_AT_FV_LOG_GRF
     //"time at fv" grf
     static int			cnt2 = 0;
-    if (++cnt2 == 2)
+    if (m_pipe_grf_run_at_fv && ++cnt2 == 2)
     {
         cnt2 = 0;
 
         double					s1, s2, diff;
-        unsigned long			val = 0;
+        unsigned char			val[32];
         for (cpu = m_ncpu - 1; cpu >= 0; cpu--)
         {
+            val[cpu] = 0;
             s1 = 0;
             s2 = 0;
 
@@ -270,12 +290,12 @@ void cpu_logs::UpdateFvGrf ()
             }
 
             if (s2)
-                val = (val << 8) + (unsigned long) (s1 / s2);
+                val[cpu] = (unsigned long) (s1 / s2);
         }
-        writepipe (m_pipe_grf_run_at_fv, &val, m_ncpu);
+        writepipe (m_pipe_grf_run_at_fv, val, m_ncpu);
         memcpy (m_ns_time_at_fv_prev, m_ns_time_at_fv, m_ncpu * NO_FV_LEVELS * sizeof (unsigned long long));
     }
-#endif
+    #endif
 }
 
 /*

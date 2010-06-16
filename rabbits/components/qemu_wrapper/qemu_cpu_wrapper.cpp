@@ -337,6 +337,7 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
                 else
                 {
                     unsigned long i = 0;
+                    val = val & (-val);
                     while (val)
                     {
                         val >>= 1;

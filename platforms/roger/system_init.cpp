@@ -166,7 +166,7 @@ int check_init (init_struct *is)
     }
 
     if (is->initrd_filename && stat(is->initrd_filename, &s) != 0) {
-        printf("cannot stat initrd file '%s': %s\n", is->kernel_filename, strerror(errno));
+        printf("cannot stat initrd file '%s': %s\n", is->initrd_filename, strerror(errno));
         error = 1;
     }
 
@@ -175,32 +175,32 @@ int check_init (init_struct *is)
 
 static unsigned long bootloader[] = 
 {
-    0xee101fb0,                                 /* mrc 15, 0, r1, cr0, cr0, {5}*/
-    0xe211100f,                                 /* ands    r1, r1, #15 ; 0xf*/
-    0x159f3004,                                 /* ldrne   r3, [pc, #4]*/
-    0x0a000001,                                 /* beq pc + 4*/
-    0xe12fff13,                                 /* bx  r3*/
-    0x85000000,                                 /* <second cpus boot addr>*/
-    0xe3a00000,                                 /* mov     r0, #0 */
-    0xe3a01000 | (BOARD_ID & 0xff),             /* mov     r1, #0x?? */
-    0xe3811c00 | ((BOARD_ID >> 8) & 0xff),      /* orr     r1, r1, #0x??00 */
-    0xe59f2000,                                 /* ldr     r2, [pc, #0] */
-    0xe59ff000,                                 /* ldr     pc, [pc, #0] */
-    KERNEL_ARGS_ADDR,                           /* <address of kernel args>*/
-    KERNEL_LOAD_ADDR                            /* <kernel entry point>*/
+    0xee101fb0,                                 /*  0 - mrc 15, 0, r1, cr0, cr0, {5}*/
+    0xe211100f,                                 /*  4 - ands    r1, r1, #15 ; 0xf*/
+    0x159f3004,                                 /*  8 - ldrne   r3, [pc, #4]*/
+    0x0a000001,                                 /*  C - beq pc + 4*/
+    0xe12fff13,                                 /* 10- bx  r3*/
+    0x85000000,                                 /* 14 - <second cpus boot addr>*/
+    0xe3a00000,                                 /* 18 - mov     r0, #0 */
+    0xe3a01000 | (BOARD_ID & 0xff),             /* 1C - mov     r1, #0x?? */
+    0xe3811c00 | ((BOARD_ID >> 8) & 0xff),      /* 20 - orr     r1, r1, #0x??00 */
+    0xe59f2000,                                 /* 24 - ldr     r2, [pc, #0] */
+    0xe59ff000,                                 /* 28 - ldr     pc, [pc, #0] */
+    KERNEL_ARGS_ADDR,                           /* 2C - <address of kernel args>*/
+    KERNEL_LOAD_ADDR                            /* 30 - <kernel entry point>*/
 };
 
 /* Entry point for secondary CPUs.
 Issue WFI until start address is written to system controller.  */
 static unsigned long smpboot[] =
 {
-  0xe3a00482, /* mov     r0, #0x82000000 */
-  0xe3800084, /* orr     r0, #0x84 */
-  0xe320f003, /* wfi */
-  0xe5901000, /* ldr     r1, [r0] */
-  0xe3110003, /* tst     r1, #3 */
-  0x1afffffb, /* bne     <wfi> */
-  0xe12fff11  /* bx      r1 */
+  0xe3a00482, /*  0 - mov     r0, #0x82000000 */
+  0xe3800084, /*  4 - orr     r0, #0x84 */
+  0xe320f003, /*  8 - wfi */
+  0xe5901000, /*  C - ldr     r1, [r0] */
+  0xe3110003, /* 10 - tst     r1, #3 */
+  0x1afffffb, /* 14 - bne     <wfi> */
+  0xe12fff11  /* 18 - bx      r1 */
 };
 
 static void set_kernel_args (unsigned long ram_size, int initrd_size,
