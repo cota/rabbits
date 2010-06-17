@@ -107,7 +107,7 @@ void interconnect_master::dispatch_requests_thread ()
                 break;
         if (i == m_nmap)
         {
-            printf ("Error (masterid=%d): Cannot map the address %lu to a slave!\n", m_srcid, addr);
+            printf ("Error (masterid=%d): Cannot map the address 0x%lx to a slave!\n", m_srcid, addr);
             exit (1);
         }
         slave = m_parent->get_slave (m_map[i].slave_id);

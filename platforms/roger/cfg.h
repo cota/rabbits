@@ -20,7 +20,8 @@
 #ifndef _CFG_H_152G_
 #define _CFG_H_152G_
 
-#define SYSTEM_CLOCK_FV 1000000000
+//#define ENERGY_TRACE_ENABLED
+//#define TIME_AT_FV_LOG_GRF
 
 #endif
 

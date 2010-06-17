@@ -33,11 +33,12 @@
 #define DCOUT if (0) cout
 #endif
 
+#define TIMER_CLOCK_FV 1000000000
+
 timer_device::timer_device (sc_module_name module_name) : slave_device (module_name)
 {
     divisor = 0;
     ns_period = 0;
-    high_ticks = 0xFFFFFFFF;
     divisor_changed = false;
     bOneShot = false;
 
@@ -59,7 +60,7 @@ void timer_device::write (unsigned long ofs, unsigned char be, unsigned char *da
         if (val1 != 0xFFFFFFFF)
         {
             divisor = val1;
-            ns_period = ((double)1000000000) / SYSTEM_CLOCK_FV * divisor;
+            ns_period = ((double)1000000000) / TIMER_CLOCK_FV * divisor;
             divisor_changed = true;
             ev_wake.notify(SC_ZERO_TIME);
         }
@@ -96,25 +97,15 @@ void timer_device::read (unsigned long ofs, unsigned char be, unsigned char *dat
     case 0x00:
         if (be == 0x0F)
         {
-            *((unsigned long *)data + 0) = 1;
+            *((unsigned long *) data + 0) = 1;
         }
         else
         {
-            unsigned long long ticks =
-                ((sc_time_stamp ().value () / 1000) * (SYSTEM_CLOCK_FV/1000000)) / 1000;
-            *((unsigned long *)data + 1) = (unsigned long) (ticks & 0xFFFFFFFF);
-            high_ticks = (unsigned long) ((ticks >> 32) & 0xFFFFFFFF);
-            //cout << "GetTime, hw time = " << sc_time_stamp () << "(ticks=" << ticks << ")" <<endl;
+            goto _err;
         }
         break;
-    case 0x08:
-        if (be == 0x0F)
-        {
-            *((unsigned long *)data + 0) = high_ticks;
-            high_ticks = 0xFFFFFFFF;
-            break;
-        }
     default:
+        _err:
         printf ("Bad %s::%s ofs=0x%X, be=0x%X!\n",
                 name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
         exit (1);

@@ -68,7 +68,7 @@ public:
             }
         }
 
-        printf ("Error: 0x%X bad address required in %s!\n", (unsigned int) addr, __FUNCTION__);
+        printf ("Error: 0x%lx bad address required in %s!\n", addr, __FUNCTION__);
         return -1;
     }
 

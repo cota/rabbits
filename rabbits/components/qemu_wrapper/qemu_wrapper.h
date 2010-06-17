@@ -20,6 +20,7 @@
 #ifndef _QEMU_WRAPPER_
 #define _QEMU_WRAPPER_
 
+#include <cfg.h>
 #include <qemu_wrapper_access_interface.h>
 #include <qemu_imported.h>
 #include <qemu_cpu_wrapper.h>
@@ -54,7 +55,7 @@ public:
     virtual unsigned long get_int_status ();
     virtual unsigned long get_int_enable ();
     virtual void set_int_enable (unsigned long val);
-    virtual uint64 get_no_instr_cpu (int cpu);
+    virtual uint64 get_no_cycles_cpu (int cpu);
 
 private:
     //threads

@@ -4,11 +4,17 @@ QEMU         = $(HW)/rabbits/libs
 COMPONENTS   = rabbits/components
 PLATFORMS    = platforms
 SRC_BASE_DIR = $(HW)
-SUB_DIRS     = $(COMPONENTS)/abstract_noc $(COMPONENTS)/mem    \
-               $(COMPONENTS)/qemu_wrapper $(COMPONENTS)/ramdac \
-               $(COMPONENTS)/sem $(COMPONENTS)/slave_device    \
-               $(COMPONENTS)/master_device $(COMPONENTS)/tg    \
-               $(COMPONENTS)/timer $(COMPONENTS)/tty_serial    \
+SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
+               $(COMPONENTS)/mem                \
+               $(COMPONENTS)/qemu_wrapper       \
+               $(COMPONENTS)/ramdac             \
+               $(COMPONENTS)/sem                \
+               $(COMPONENTS)/slave_device       \
+               $(COMPONENTS)/master_device      \
+               $(COMPONENTS)/tg                 \
+               $(COMPONENTS)/timer              \
+               $(COMPONENTS)/tty_serial         \
+               $(COMPONENTS)/etrace             \
                $(PLATFORMS)/roger
 
 CC           = g++

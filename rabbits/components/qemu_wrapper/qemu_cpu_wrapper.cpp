@@ -26,12 +26,12 @@
 #include <sys/time.h>
 #include <time.h>
 #include <cfg.h>
+#include <etrace_if.h>
 #include <../../qemu/qemu-0.9.1/qemu_systemc.h>
 
 #include <master_device.h>
 
 #define CPU_TIMEOUT							10000
-#define NS_PER_CPU_INSTR_AT_FV_MAX          (1000000000/SYSTEM_CLOCK_FV)
 
 static unsigned long                        s_addr_startup_secondary = 0xFFFFFFFF;
 
@@ -68,13 +68,15 @@ qemu_cpu_wrapper::qemu_cpu_wrapper (sc_module_name name,
     m_cpuindex = cpuindex;
     m_rqs = new qemu_wrapper_requests (100);
 
-    m_fv_level = 0;
-    m_last_read_sctime = (uint64) -1;
-    m_last_no_instr_high = (unsigned long) -1;
     m_logs = logs;
+    m_fv_level = m_logs->m_cpu_boot_fv_level;
+    m_last_read_sctime = (uint64) -1;
+    m_last_no_cycles_high = (unsigned long) -1;
 
+    m_ns_per_cpu_cycle_max_fv = 
+        ((double) 1000) / m_logs->m_cpu_fvs[m_logs->m_cpu_nb_fv_levels - 1];
     m_crt_cpu_thread = 0;
-    m_no_total_instr = 0;
+    m_no_total_cycles = 0;
     m_unblocking_write = 1;
     m_swi = 0;
 
@@ -85,8 +87,6 @@ qemu_cpu_wrapper::qemu_cpu_wrapper (sc_module_name name,
 
     SC_THREAD (cpu_thread);
     SC_THREAD (timeout_thread);
-
-    //SC_THREAD (receiveThread);
 }
 
 qemu_cpu_wrapper::~qemu_cpu_wrapper ()
@@ -100,44 +100,44 @@ void qemu_cpu_wrapper::set_unblocking_write (bool val)
     m_unblocking_write = val;
 }
 
-void qemu_cpu_wrapper::consume_instruction_cycles_with_sync (unsigned long ninstr)
+void qemu_cpu_wrapper::consume_instruction_cycles_with_sync (unsigned long ncycles)
 {
     uint64				ps_start_time;
-    double				instr_done;
+    double				cycles_done;
     double				start_fv_percent;
     unsigned long       start_fv_level;
-    uint64				start_no_instr;
+    uint64				start_no_cycles;
     uint64				ps_time_passed;
-    double              instr = ninstr;
+    double              cycles = ncycles;
     bool                bIdle = false;
 
-    start_no_instr = m_no_total_instr;
+    start_no_cycles = m_no_total_cycles;
 
     do
     {
         ps_start_time = sc_time_stamp ().value ();
 
-        start_fv_percent = g_cpu_fv_percents[m_fv_level];
+        start_fv_percent = m_logs->m_cpu_fv_percents[m_fv_level];
         if (start_fv_percent == 0)
         {
             bIdle = true;
-            start_fv_percent = g_cpu_fv_percents[0];
+            start_fv_percent = m_logs->m_cpu_fv_percents[0];
         }
         start_fv_level = m_fv_level;
 
-        wait ((instr * NS_PER_CPU_INSTR_AT_FV_MAX * 100) / start_fv_percent, SC_NS, m_ev_sync);
+        wait ((cycles * m_ns_per_cpu_cycle_max_fv * 100) / start_fv_percent, SC_NS, m_ev_sync);
 
         ps_time_passed = sc_time_stamp ().value () - ps_start_time;
-        m_logs->AddTimeAtFv (m_cpuindex, start_fv_level, ps_time_passed / 1000);
-        instr_done = (ps_time_passed * start_fv_percent) / (1000 * 100 * NS_PER_CPU_INSTR_AT_FV_MAX);
+        m_logs->add_time_at_fv (m_cpuindex, start_fv_level, ps_time_passed / 1000);
+        cycles_done = (ps_time_passed * start_fv_percent) / (1000 * 100 * m_ns_per_cpu_cycle_max_fv);
 
         if (!bIdle)
-            m_no_total_instr += (uint64) instr_done;
-        instr -= instr_done;
-    } while (instr >= 1);
+            m_no_total_cycles += (uint64) cycles_done;
+        cycles -= cycles_done;
+    } while (cycles >= 1);
 
     if (!bIdle)
-        m_no_total_instr = start_no_instr + ninstr;
+        m_no_total_cycles = start_no_cycles + ncycles;
 }
 
 
@@ -157,8 +157,18 @@ void qemu_cpu_wrapper::cpu_thread ()
         case EXCP_HALTED:
         {
             uint64				ps_start_time = sc_time_stamp ().value ();
+
+            #ifdef ENERGY_TRACE_ENABLED
+            etrace.change_energy_mode (m_etrace_periph_id, ETRACE_MODE(ETRACE_CPU_IDLE, m_fv_level));
+            #endif
+
             wait (m_ev_wakeup);
-            m_logs->AddTimeAtFv (m_cpuindex, MAX_FV_LEVEL, (sc_time_stamp ().value () - ps_start_time) / 1000);
+            m_logs->add_time_at_fv (m_cpuindex, m_logs->m_cpu_nb_fv_levels,
+                (sc_time_stamp ().value () - ps_start_time) / 1000);
+
+            #ifdef ENERGY_TRACE_ENABLED
+            etrace.change_energy_mode (m_etrace_periph_id, ETRACE_MODE(ETRACE_CPU_RUNNING, m_fv_level));
+            #endif
         }
         break;
 
@@ -197,7 +207,7 @@ void qemu_cpu_wrapper::timeout_thread ()
             m_ev_sync.notify ();
             wait (0, SC_NS);
 
-            m_logs->UpdateFvGrf ();
+            m_logs->update_fv_grf ();
         }
 
         DCOUT << "CPU " << m_cpuindex << " sc_timeout" << endl;
@@ -217,15 +227,19 @@ void qemu_cpu_wrapper::set_cpu_fv_level (unsigned long val)
     if (val == m_fv_level)
         return;
 
-    if  (val > MAX_FV_LEVEL)
+    if  (val >= m_logs->m_cpu_nb_fv_levels)
     {
         cerr << "Error: Bad cpu percent specified for qemu_wrapper " << std::dec << val << endl;
         exit (1);
     }
 
-    m_qemu_import->qemu_set_cpu_fv_percent (m_cpuenv, (unsigned long) g_cpu_fv_percents[val]);
+    m_qemu_import->qemu_set_cpu_fv_percent (m_cpuenv, (unsigned long) m_logs->m_cpu_fv_percents[val]);
     m_fv_level = val;
     m_ev_sync.notify ();
+
+    #ifdef ENERGY_TRACE_ENABLED
+    etrace.change_energy_mode (m_etrace_periph_id, ETRACE_MODE(ETRACE_CPU_RUNNING, val));
+    #endif
 }
 
 
@@ -244,12 +258,12 @@ unsigned long qemu_cpu_wrapper::get_cpu_ncycles ()
 }
 
 
-uint64 qemu_cpu_wrapper::get_no_instr ()
+uint64 qemu_cpu_wrapper::get_no_cycles ()
 {
     m_ev_sync.notify ();
     wait (0, SC_NS);
 
-    return m_no_total_instr;
+    return m_no_total_cycles;
 }
 
 
@@ -348,24 +362,24 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
             }
             break;
 
-        case GET_ALL_CPUS_NO_INSTR:
-        case GET_NO_INSTR_CPU1:
-        case GET_NO_INSTR_CPU2:
-        case GET_NO_INSTR_CPU3:
-        case GET_NO_INSTR_CPU4:
-            if (m_last_no_instr_high == (unsigned long) -1)
+        case GET_ALL_CPUS_NO_CYCLES:
+        case GET_NO_CYCLES_CPU1:
+        case GET_NO_CYCLES_CPU2:
+        case GET_NO_CYCLES_CPU3:
+        case GET_NO_CYCLES_CPU4:
+            if (m_last_no_cycles_high == (unsigned long) -1)
             {
-                uint64                      no_instr;
+                uint64                      no_cycles;
                 int                         cpu;
-                cpu = (int) ((addr - GET_ALL_CPUS_NO_INSTR) >> 2) - 1;
-                no_instr = m_port_access->get_no_instr_cpu (cpu) ;
-                m_last_no_instr_high = no_instr >> 32;
-                val = (unsigned long) (no_instr & 0xFFFFFFFF);
+                cpu = (int) ((addr - GET_ALL_CPUS_NO_CYCLES) >> 2) - 1;
+                no_cycles = m_port_access->get_no_cycles_cpu (cpu) ;
+                m_last_no_cycles_high = no_cycles >> 32;
+                val = (unsigned long) (no_cycles & 0xFFFFFFFF);
             }
             else
             {
-                val = m_last_no_instr_high;
-                m_last_no_instr_high = (unsigned long) -1;
+                val = m_last_no_cycles_high;
+                m_last_no_cycles_high = (unsigned long) -1;
             }
             break;
         case GET_SECONDARY_STARTUP_ADDRESS:
@@ -380,6 +394,10 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
     }
     else
     {
+        #ifdef ENERGY_TRACE_ENABLED
+        etrace.energy_event (m_etrace_periph_id, READ_COMMAND, 0);
+        #endif
+
         val = read (addr, nbytes, bIO);
     }
 
@@ -414,7 +432,7 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
             m_port_access->set_cpu_fv_level ((unsigned long) -1, data);
             break;
         case TEST_WRITE_SYSTEMC:
-            wait (100 * NS_PER_CPU_INSTR_AT_FV_MAX, SC_NS);
+            wait (100 * m_ns_per_cpu_cycle_max_fv, SC_NS);
             break;
         case SYSTEMC_SHUTDOWN:
             if (data != 0)
@@ -452,7 +470,7 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
                      us_crt_sc_time,
                      (crt_time.tv_sec - start_time.tv_sec) * 1000 +
                      (crt_time.tv_usec - start_time.tv_usec) / 1000,
-                     no_instr, m_port_access->get_no_instr_cpu (-1),
+                     no_instr, m_port_access->get_no_cycles_cpu (-1),
                      no_dcache_miss, no_icache_miss,
                      no_uncached, no_write
                 );
@@ -462,15 +480,15 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
         {
             static unsigned long cnt1 = 0;
             printf ("TEST1_WRITE_SYSTEMC %lu, sc_time=%llu ps, ninstr=%llu\n",
-                    ++cnt1, sc_time_stamp ().value (), m_port_access->get_no_instr_cpu (-1));
+                    ++cnt1, sc_time_stamp ().value (), m_port_access->get_no_cycles_cpu (-1));
         }
         break;
         case TEST2_WRITE_SYSTEMC:
-            printf ("TEST2_WRITE_SYSTEMC, ninstr=%llu\n", m_port_access->get_no_instr_cpu (-1));
+            printf ("TEST2_WRITE_SYSTEMC, ninstr=%llu\n", m_port_access->get_no_cycles_cpu (-1));
             break;
 
         case TEST3_WRITE_SYSTEMC:
-            printf ("TEST3_WRITE_SYSTEMC, ninstr=%llu\n", m_port_access->get_no_instr_cpu (-1));
+            printf ("TEST3_WRITE_SYSTEMC, ninstr=%llu\n", m_port_access->get_no_cycles_cpu (-1));
             break;
         case LOG_SET_THREAD_CPU:
             m_crt_cpu_thread = data;
@@ -506,14 +524,17 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
     }
     else
     {
+        #ifdef ENERGY_TRACE_ENABLED
+        etrace.energy_event (m_etrace_periph_id, WRITE_COMMAND, 0);
+        #endif
+
         write (addr, data, nbytes, bIO);
     }
 }
 
-
 void qemu_cpu_wrapper::add_time_at_fv (unsigned long ns)
 {
-    m_logs->AddTimeAtFv (m_cpuindex, m_fv_level, ns);
+    m_logs->add_time_at_fv (m_cpuindex, m_fv_level, ns);
 }
 
 
@@ -522,6 +543,14 @@ void qemu_cpu_wrapper::wakeup ()
     m_ev_wakeup.notify ();
 }
 
+#ifdef ENERGY_TRACE_ENABLED
+void qemu_cpu_wrapper::set_etrace_periph_id (unsigned long id)
+{
+    this->m_etrace_periph_id = id;
+    etrace.change_energy_mode (m_etrace_periph_id,
+        ETRACE_MODE(ETRACE_CPU_RUNNING, m_logs->m_cpu_boot_fv_level));
+}
+#endif
 
 void qemu_cpu_wrapper::rcv_rsp(unsigned char tid, unsigned char *data,
                                bool bErr, bool bWrite){

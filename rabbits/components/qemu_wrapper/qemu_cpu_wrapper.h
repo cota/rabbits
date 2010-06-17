@@ -20,7 +20,7 @@
 #ifndef _QEMU_CPU_WRAPPER_
 #define _QEMU_CPU_WRAPPER_
 
-
+#include <cfg.h>
 #include <qemu_wrapper_request.h>
 #include <qemu_wrapper_access_interface.h>
 #include <qemu_imported.h>
@@ -52,9 +52,14 @@ public:
                                     unsigned char nbytes, int bIO);
     void consume_instruction_cycles_with_sync (unsigned long ns);
     void add_time_at_fv (unsigned long ns);
-    uint64 get_no_instr ();
+    uint64 get_no_cycles ();
     void wait_wb_empty ();
     void wakeup ();
+
+    #ifdef ENERGY_TRACE_ENABLED
+    //etrace
+    void set_etrace_periph_id (unsigned long id);
+    #endif
 
 private:
     //threads
@@ -94,22 +99,28 @@ private:
     unsigned long                           m_base_address;
     unsigned long                           m_end_address;
     bool                                    m_unblocking_write;
+    double                                  m_ns_per_cpu_cycle_max_fv;
 
     qemu_import_t                           *m_qemu_import;
 
     //tmp regs
     uint64									m_last_read_sctime;
-    unsigned long                           m_last_no_instr_high;
+    unsigned long                           m_last_no_cycles_high;
 
     //counters
-    uint64									m_no_total_instr;
+    uint64									m_no_total_cycles;
 
     //log
     cpu_logs								*m_logs;
 
+    #ifdef ENERGY_TRACE_ENABLED
+    //etrace
+    unsigned long                           m_etrace_periph_id;
+    #endif
+
 public:
     int								        m_cpuindex;
-    //    unsigned int                            m_node_id;
+    //    unsigned int                      m_node_id;
     unsigned long                           m_crt_cpu_thread;
     unsigned long                           m_swi;
  

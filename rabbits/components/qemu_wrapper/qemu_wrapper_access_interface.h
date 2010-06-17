@@ -32,7 +32,7 @@ public :
     virtual void swi_ack (int cpu, unsigned long swi_mask) = 0;
 
     virtual unsigned long get_cpu_ncycles (unsigned long cpu) = 0;
-    virtual uint64 get_no_instr_cpu (int cpu) = 0;
+    virtual uint64 get_no_cycles_cpu (int cpu) = 0;
 
     virtual unsigned long get_int_status () = 0;
     virtual unsigned long get_int_enable () = 0;
