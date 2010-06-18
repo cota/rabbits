@@ -95,13 +95,7 @@ void ramdac_device::write (unsigned long ofs, unsigned char be, unsigned char *d
                 //printf ("Image %d\n", nb_images);
                 if (no_frames_to_simulate && nb_images == no_frames_to_simulate)
                 {
-                    if (pid)
-                        kill (pid, SIGTERM);
-                    {
-                        extern void close_ttys ();
-                        close_ttys ();
-                    }
-                    sc_stop ();
+                    exit (1);
                 }
             }
         }

@@ -46,20 +46,16 @@ interconnect_slave::~interconnect_slave ()
 void interconnect_slave::put (vci_response &rsp)
 {
     m_queue_responses->Write (rsp);
-    wait (0, SC_NS);
 }
 
 //get interface
 void interconnect_slave::get (vci_request &req)
 {	
     req = m_queue_requests->Read ();
-    wait (0, SC_NS);
 }
 
 void interconnect_slave::dispatch_responses_thread ()
 {
-    unsigned long			adr;
-    int						i;
     vci_response			rsp;
     interconnect_master		*master;
 

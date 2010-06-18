@@ -36,7 +36,7 @@
 #define DCOUT if(0) cout
 #endif
 
-#ifdef ENERGY_TRACE_ENABLED
+#if defined(ENERGY_TRACE_ENABLED) && !defined(ETRACE_NB_CPU_IN_GROUP)
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 

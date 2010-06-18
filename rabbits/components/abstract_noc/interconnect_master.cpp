@@ -78,14 +78,12 @@ interconnect_master::~interconnect_master ()
 void interconnect_master::put (vci_request &req)
 {
     m_queue_requests->Write (req);
-    wait (0, SC_NS);
 }
 
 //get interface
 void interconnect_master::get (vci_response &rsp)
 {
     rsp = m_queue_responses->Read ();
-    wait (0, SC_NS);
 }
 
 void interconnect_master::dispatch_requests_thread ()

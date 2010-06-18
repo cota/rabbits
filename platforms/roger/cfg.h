@@ -20,8 +20,12 @@
 #ifndef _CFG_H_152G_
 #define _CFG_H_152G_
 
-//#define ENERGY_TRACE_ENABLED
+#define ENERGY_TRACE_ENABLED
 //#define TIME_AT_FV_LOG_GRF
+
+#ifdef ENERGY_TRACE_ENABLED
+#define ETRACE_NB_CPU_IN_GROUP 4
+#endif
 
 #endif
 

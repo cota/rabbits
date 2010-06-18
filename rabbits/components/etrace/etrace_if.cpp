@@ -5,8 +5,28 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <stdlib.h>
+
+static int      s_pid_graph[20];
+static int      s_nb_graph = 0;
+
+static void close_graph ()
+{
+    int         i, status;
+
+    if (s_nb_graph == 0)
+        return;
+
+    for (i = 0; i < s_nb_graph; i++)
+    {
+        kill (s_pid_graph[i], SIGKILL);
+        ::wait (&status);
+    }
+
+    s_nb_graph = 0;
+}
 
 sample_t *
 sample_new (scope_state_t *scope, uint64_t prev_stamp)
@@ -200,7 +220,7 @@ static inline void writepipe (int &pipe, const void* adr, int nbytes)
 void
 etrace_if::display_init (void)
 {
-    int             i, pid;
+    int             i;
     int             disp_pipe[2];
     unsigned int    val;
     long long       long_val;
@@ -212,8 +232,10 @@ etrace_if::display_init (void)
         exit (EXIT_FAILURE);
     }
   
-    if ((pid = fork ()) == 0) 
+    if ((s_pid_graph[s_nb_graph++] = fork ()) == 0)
     {
+        setpgrp();
+
         // son
         int         null_fd;
 
@@ -334,6 +356,8 @@ etrace_if::etrace_if (sc_module_name name)
 
     m_measure_started = 0;
     m_measure_accum   = 0;
+
+    atexit (close_graph);
 
     // init SystemC stuffs.
     SC_THREAD (scope_trigger);

@@ -438,8 +438,6 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
             if (data != 0)
             {
                 cout << "Shutdown requested!" << endl;
-                kill (0, SIGKILL);
-                //sc_stop ();
                 exit (1);
             }
             break;
