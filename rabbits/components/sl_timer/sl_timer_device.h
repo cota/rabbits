@@ -66,11 +66,14 @@ public:
 private:
     uint32_t            m_period;
     uint32_t            m_mode;
+    uint32_t            m_value;
+
     double              m_ns_period;
     sc_event            ev_wake;
     sc_event            ev_irq_update;
     
     uint64_t            m_last_period;
+    uint64_t            m_next_period;
 
     bool                m_irq;
     bool                m_config_mod;

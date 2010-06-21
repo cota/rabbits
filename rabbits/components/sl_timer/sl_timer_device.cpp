@@ -33,13 +33,17 @@
 #define DCOUT if (0) cout
 #endif
 
+#define TIMER_DIV 10
+
 sl_timer_device::sl_timer_device (sc_module_name module_name) : slave_device (module_name)
 {
 
     m_period    = 0;
     m_mode      = 0;
+    m_value     = 0;
     m_ns_period = 0;
     m_last_period = 0;
+    m_next_period = 0;
     m_irq = false;
     m_config_mod = false;
 
@@ -54,8 +58,16 @@ sl_timer_device::~sl_timer_device ()
 
 void sl_timer_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
-    unsigned long           val1 = ((unsigned long*)data)[0];
-    unsigned long           val2 = ((unsigned long*)data)[1];
+    uint32_t                value;
+
+    ofs >>= 2;
+    if (be & 0xF0)
+    {
+        ofs++;
+        value = * ((uint32_t *) data + 1);
+    }
+    else
+        value = * ((uint32_t *) data + 0);
 
     switch (ofs)
     {
@@ -64,32 +76,40 @@ void sl_timer_device::write (unsigned long ofs, unsigned char be, unsigned char 
         break;
 
     case TIMER_MODE:
-        DPRINTF("Mode write : %x\n", val1); 
-        if((m_mode ^ val1) & 0x1){
+        DPRINTF("Mode write : %x\n", value); 
+        if((m_mode ^ value) & 0x1){
+            if(value & 0x1){ /* Starting */
+                m_last_period = sc_time_stamp().value();
+                m_value       = 0;
+            }
             m_config_mod = true;
-            m_mode = val1 & 0x3;
             ev_wake.notify();
-        }else{
-            m_mode = *data & 0x3;
         }
+        m_mode = value & 0x3;
         break;
 
     case TIMER_PERIOD:
-        m_period = val1;
-        m_ns_period = ((double)1000000000) / SYSTEM_CLOCK_FV * m_period;
+        m_period      = value;
+        m_next_period = (sc_time_stamp().value() - m_last_period) + 
+            ((uint64_t)1000000000000ULL /* 1s -> ps */ / (SYSTEM_CLOCK_FV / TIMER_DIV) * m_period);
+
+        DPRINTF("TIMER_PERIOD write : %d (curr_tick: %lld next: %lld)\n",
+               value, (sc_time_stamp().value() - m_last_period)/1000,
+               m_next_period/1000);
         m_config_mod = true;
         ev_wake.notify();
         break;
 
     case TIMER_RESETIRQ:
-        m_irq = false;
+        m_irq = 0;
         ev_irq_update.notify();
         break;
 
     default:
         DPRINTF ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
                  name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
-                 (unsigned int) *((unsigned long*)data + 0), (unsigned int) *((unsigned long*)data + 1));
+                 (unsigned int) *((unsigned long*)data + 0),
+                 (unsigned int) *((unsigned long*)data + 1));
         exit (1);
         break;
     }
@@ -101,13 +121,23 @@ void sl_timer_device::read (unsigned long ofs, unsigned char be, unsigned char *
     int             i;
     uint32_t  *val = (uint32_t *)data;
 
-    val = 0;
-    *((unsigned long *)data + 1) = 0;
+    ofs >>= 2;
+    if (be & 0xF0)
+    {
+        ofs++;
+        val++;
+    }
+
+    *val = 0;
 
     switch (ofs)
     {
     case TIMER_VALUE:
-        *val = (sc_time_stamp().value() - m_last_period) / 1000 / SYSTEM_CLOCK_FV;
+        *val = (sc_time_stamp().value() - m_last_period) / 1000 * 
+            (SYSTEM_CLOCK_FV / TIMER_DIV) / 1000000000;
+        DPRINTF("TIMER_VALUE read: %d [sc: %lld last: %lld diff: %lld]\n",
+               *val, sc_time_stamp().value()/1000, m_last_period/1000,
+               (sc_time_stamp().value() -  m_last_period)/1000);
         break;
 
     case TIMER_MODE:
@@ -119,7 +149,7 @@ void sl_timer_device::read (unsigned long ofs, unsigned char be, unsigned char *
         break;
 
     case TIMER_RESETIRQ:
-        *val = (m_irq == true);
+        *val = (m_irq == 1);
         break;
 
 
@@ -139,7 +169,7 @@ void sl_timer_device::irq_update_thread ()
 
         wait(ev_irq_update);
 
-        irq = (m_irq == true);
+        irq = (m_irq == 1);
     }
 }
 
@@ -147,25 +177,33 @@ void sl_timer_device::sl_timer_thread (void)
 {
     while (1)
     {
-        if (m_ns_period == 0){
+        if (m_period == 0){
             wait (ev_wake);
         }else{
-            DPRINTF("Timer running\n");
-            wait (m_ns_period, SC_NS, ev_wake);
+            uint64_t wait_time = 0;
+            //DPRINTF("Timer running\n");
+            wait_time = m_next_period - (sc_time_stamp().value() - m_last_period);
+            //DPRINTF("Waiting %lld ns\n", wait_time/1000);
+            wait(wait_time, SC_PS, ev_wake);
+          
+            //wait (m_ns_period, SC_NS, ev_wake);
         }
 
         if(m_config_mod){
-            DPRINTF("Timer Started/Stopped\n");
+            //DPRINTF("Timer Started/Stopped\n");
             m_irq = 0;
             ev_irq_update.notify();
+            m_config_mod = 0;
         }else{ // end of period
             if(m_mode & TIMER_IRQ_ENABLED){
-                DPRINTF("Timer raise an IRQ\n");
+                DPRINTF("Timer raise an IRQ @%lld\n",
+                       (sc_time_stamp().value() - m_last_period)/1000);
                 m_irq = 1;
                 ev_irq_update.notify();
             }
+            m_next_period = (sc_time_stamp().value() - m_last_period) + 
+                ((uint64_t)1000000000000ULL /* 1s -> ps */ / (SYSTEM_CLOCK_FV / TIMER_DIV) * m_period);
         }
-        m_last_period = sc_time_stamp().value();
     }
 }
 
