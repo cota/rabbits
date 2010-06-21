@@ -2,6 +2,8 @@ rabbits_env
 soft_env
 .stamps
 
+cscope.*
+
 platforms/roger/logCPUs
 platforms/roger/objs/
 platforms/roger/run.x
