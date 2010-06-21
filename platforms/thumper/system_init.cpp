@@ -248,6 +248,12 @@ static void set_kernel_args (unsigned long ram_size, int initrd_size,
     *p++ = 0;
 }
 
+void arm_load_dnaos(init_struct *is){
+
+    systemc_load_image (is->kernel_filename, 0);
+
+}
+
 void arm_load_kernel (init_struct *is)
 {
     systemc_load_image (is->kernel_filename, KERNEL_LOAD_ADDR);

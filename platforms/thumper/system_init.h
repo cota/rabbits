@@ -36,6 +36,7 @@ typedef struct
 void parse_cmdline (int argc, char **argv, init_struct *is);
 int check_init (init_struct *is);
 void arm_load_kernel (init_struct *is);
+void arm_load_dnaos(init_struct *is);
 
 #endif
 

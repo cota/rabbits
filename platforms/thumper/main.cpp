@@ -35,6 +35,7 @@
 #include <interconnect.h>
 #include <sl_timer_device.h>
 #include <sl_tty_device.h>
+#include <sl_mailbox_device.h>
 #include <mem_device.h>
 #include <qemu_imported.h>
 
@@ -56,12 +57,15 @@ int sc_main (int argc, char ** argv)
 {
     int             i;
 
+    int n_mb  = 2;
+    int n_tty = 2;
+
     memset (&is, 0, sizeof (init_struct));
     is.cpu_family = "arm";
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 3;
+    is.no_cpus = 2;
     is.ramsize = 128 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
@@ -69,37 +73,42 @@ int sc_main (int argc, char ** argv)
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
-    sl_tty_device   *tty = new sl_tty_device ("tty", 1);
+    sl_tty_device     *tty = new sl_tty_device ("tty", n_tty);
+    sl_mailbox_device *mb  = new sl_mailbox_device("mb", n_mb); 
+
     slaves[nslaves++] = ram;        // 0
     slaves[nslaves++] = tty;        // 1
+    slaves[nslaves++] = mb;         // 2
 
-    sl_timer_device    *timers[1];
+    sl_timer_device    *timers[2];
     int              ntimers = sizeof (timers) / sizeof (sl_timer_device *);
     for (i = 0; i < ntimers; i++)
     {
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new sl_timer_device (buf);
-        slaves[nslaves++] = timers[i]; //2 + i
+        slaves[nslaves++] = timers[i]; // 3 + i
     };
-    int                         no_irqs = ntimers;
-    int                         int_cpu_mask [] = {1, 1, 0, 0, 0, 0};
+    int                         no_irqs = ntimers + n_mb;
+    int                         int_cpu_mask [] = {5, 10, 0, 0, 0, 0};
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
         timers[i]->irq (wires_irq_qemu[i]);
-    //tty->irq_line (wires_irq_qemu[no_irqs - 1]);
+    for (i = 0; i < n_mb; i++)
+        mb->irq[i] (wires_irq_qemu[i+ntimers]);
+
 
     //interconnect
     onoc = new interconnect ("interconnect", is.no_cpus, nslaves);
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
 
-    arm_load_kernel (&is);
+    arm_load_dnaos (&is);
 
     //masters
     qemu_wrapper                qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 0, 
                                     is.cpu_family, is.cpu_model, is.ramsize);
-    qemu1.add_map (0xA0000000, 0x10000000); // (base address, size)
+    qemu1.add_map (0xC0000000, 0x10000000); // (base address, size)
     qemu1.set_base_address (QEMU_ADDR_BASE);
     for (i = 0; i < no_irqs; i++)
         qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
@@ -111,6 +120,10 @@ int sc_main (int argc, char ** argv)
         qemu1.m_qemu_import.gdb_srv_start_and_wait (is.gdb_port);
         //qemu1.set_unblocking_write (0);
     }
+
+
+    qemu1.get_cpu(0)->systemc_qemu_write_memory (QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
+                                                 0x1, 4, 0);
 
     sc_start ();
 
