@@ -1,3 +1,4 @@
+
 /*
  *  Copyright (c) 2010 TIMA Laboratory
  *
@@ -25,7 +26,7 @@
 #include <sl_tty_device.h>
 #include <cfg.h>
 
-#define DEBUG_DEVICE_TTY
+//#define DEBUG_DEVICE_TTY
 
 #ifdef DEBUG_DEVICE_TTY
 #define DPRINTF(fmt, args...)                               \
@@ -44,7 +45,6 @@ extern void close_ttys ();
 void sig_hup (int)
 {
     close_ttys ();
-
     kill (0, 9);
 }
 
@@ -82,8 +82,8 @@ sl_tty_device::sl_tty_device (const char *_name, int ntty) : slave_device (_name
                         "-l", "-lf", slog,
                         "-n", sname, "-T", sname,
                         "-e",
-                        "tty_term",
-                        spipe,
+                        "tty_term_rw",
+                        spipe/*in*/, "1"/*out*/,
                         NULL) == -1)
             {
                 perror ("sl_tty_term: execlp failed!");
@@ -121,7 +121,7 @@ sl_tty_device::~sl_tty_device ()
 void sl_tty_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
     unsigned char           val, tty, be_ok = true;
-    unsigned long               value;
+    unsigned long           value;
 
     ofs >>= 2;
     if (be & 0xF0)
@@ -137,8 +137,8 @@ void sl_tty_device::write (unsigned long ofs, unsigned char be, unsigned char *d
     ofs = ofs % TTY_SPAN;
 
     if(tty >= nb_tty){
-        printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
-                name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
+        DPRINTF("(TTY too high) Bad %s::%s tty=%d ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
+                name (), __FUNCTION__, tty, (unsigned int) ofs, (unsigned int) be,
                 (unsigned int) *((unsigned long*)data + 0), (unsigned int) *((unsigned long*)data + 1));
         exit (1);
     }
@@ -146,8 +146,8 @@ void sl_tty_device::write (unsigned long ofs, unsigned char be, unsigned char *d
     switch(ofs)
     {
     case 0: //TTY_WRITE
-        val = data[tty];
-        ::write (pout[tty], &val, 1);
+        DPRINTF("TTY_WRITE[%d]: 0x%x (%c)\n", tty, (char)value, (char) value);
+        ::write (pout[tty], &value, 1);
         break;
     default:
         printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
