@@ -25,6 +25,37 @@ print_error(){
     echo -en " \033[00m"
 }
 
+sanity_checks(){
+
+	GIT=`which git`
+
+	if [ -z "${GIT}" ]; then 
+		echo "You need to install git (version above 1.6.8)"
+		exit
+	fi
+
+	GIT_VER=`${GIT} --version | cut -f3 -d' '`
+
+	case ${GIT_VER} in
+
+		1.[1-5].* | 1.6.[1-7])
+			echo "Your version of git is too old"
+			echo " Recommended version: above 1.6.8"
+			echo " your version: ${GIT_VER}"
+			exit
+			;;
+		1.6.[8-9] | 1.[7-9].*)
+			# Version OK
+			#echo "git version OK"
+			;;
+		*)
+			# sink point
+			echo "Error in git version check"
+			exit
+			;;
+	esac
+}
+
 qemu_install(){
 
     print_step "Installing QEMU sim ..."
@@ -58,6 +89,8 @@ STAMPS_DIR=${HERE}/.stamps
 source ./rabbits_env
 
 mkdir -p ${STAMPS_DIR}
+
+sanity_checks || install_error
 
 [ -e ${STAMPS_DIR}/qemu_installed ] || \
     qemu_install || install_error
