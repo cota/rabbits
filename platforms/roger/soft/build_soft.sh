@@ -117,7 +117,12 @@ STAMPS_DIR=${HERE}/.stamps
 
 mkdir -p ${STAMPS_DIR}
 
-. ./soft_env
+if [ -e ./soft_env ]; then
+	source ./soft_env
+else
+	echo "You need to set the soft_env file using the soft_env.example"
+	exit
+fi
 
 sanity_checks | install_error
 
