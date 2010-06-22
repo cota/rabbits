@@ -56,13 +56,13 @@ sanity_checks(){
 
 	case ${GIT_VER} in
 
-		1.[1-5].* | 1.6.[1-7])
+		1.[1-5].* | 1.6.[1-7].*)
 			echo "Your version of git is too old"
 			echo " Recommended version: above 1.6.8"
 			echo " your version: ${GIT_VER}"
 			exit
 			;;
-		1.6.[8-9] | 1.[7-9].*)
+		1.6.[8-9].* | 1.[7-9].*)
 			# Version OK
 			#echo "git version OK"
 			;;
