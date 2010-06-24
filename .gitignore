@@ -1,7 +1,7 @@
 rabbits_env
 soft_env
 .stamps
-
+*.save
 cscope.*
 
 platforms/roger/logCPUs

@@ -1,3 +1,4 @@
+*.save
 soft_env
 
 linux/logs
