@@ -20,11 +20,16 @@
 #ifndef _CPU_FVS_H_
 #define _CPU_FVS_H_
 
-#define NO_FV_LEVELS 5
-#define MAX_FV_LEVEL (NO_FV_LEVELS - 1)
+#include <etrace_if.h>
 
-extern unsigned long	g_cpu_fv[NO_FV_LEVELS];
-extern double			g_cpu_fv_percents[NO_FV_LEVELS];
+int get_cpu_nb_fv_levels (const char *cpufamily, const char *cpumodel);
+int get_cpu_boot_fv_level (const char *cpufamily, const char *cpumodel);
+double *get_cpu_fv_percents (const char *cpufamily, const char *cpumodel);
+unsigned long  *get_cpu_fvs (const char *cpufamily, const char *cpumodel);
+
+#ifdef ENERGY_TRACE_ENABLED
+periph_class_t *get_cpu_etrace_class (const char *cpufamily, const char *cpumodel);
+#endif
 
 #endif
 

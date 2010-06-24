@@ -140,7 +140,10 @@ void InitGCs ()
     gdk_gc_set_foreground (gc_grid, &color);
     gdk_gc_set_line_attributes (gc_grid, 1, GDK_LINE_ON_OFF_DASH, GDK_CAP_BUTT, GDK_JOIN_MITER);
     
-    static const char *color_grf[] = {"#FFE700", "#00A2FF", "#00FF82", "#B600FF"};
+    static const char *color_grf[] = {"#FFE700", "#00A2FF", "#00FF82", "#B600FF",
+                                      "#CCE700", "#00A2CC", "#00CC82", "#B600CC",
+                                      "#99E700", "#00A299", "#009982", "#B60099",
+                                      "#66E700", "#00A266", "#006682", "#B60066"};
     ngc_grf = sizeof (color_grf) / sizeof (char*);
     gc_grf = new GdkGC*[ngc_grf];
     for (i = 0; i < ngc_grf; i++)

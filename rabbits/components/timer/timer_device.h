@@ -51,7 +51,6 @@ private:
     unsigned long       divisor;
     double              ns_period;
     sc_event            ev_wake;
-    unsigned long       high_ticks;
     bool                divisor_changed;
     bool                bOneShot;
 };

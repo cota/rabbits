@@ -41,7 +41,7 @@
 static int      s_pid_tty[20];
 static int      s_nb_tty = 0;
 
-void close_ttys ()
+static void close_ttys ()
 {
     int         i, status;
 
@@ -59,9 +59,7 @@ void close_ttys ()
 
 void sig_hup (int)
 {
-    close_ttys ();
-
-    kill (0, 9);
+    exit (1);
 }
 
 void tty_serial_device::read_thread ()

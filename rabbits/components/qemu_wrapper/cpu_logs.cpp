@@ -17,6 +17,7 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,12 +28,13 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <cpu_logs.h>
-#include <cfg.h>
 
 //#define TIME_AT_FV_LOG_FILE
-#define TIME_AT_FV_LOG_GRF
 
 #define FILE_TIME_AT_FV "logTimeAtFv"
+
+#define macro_ns_time_at_fv ((unsigned long long (*)[m_cpu_nb_fv_levels_1]) m_ns_time_at_fv)
+#define macro_ns_time_at_fv_prev ((unsigned long long (*)[m_cpu_nb_fv_levels_1]) m_ns_time_at_fv_prev)
 
 static int      s_pid_chrono_cpu_fvs[20];
 static int      s_nb_chrono_cpu_fvs = 0;
@@ -43,11 +45,18 @@ static inline void writepipe (int &pipe, void* addr, int nbytes)
         pipe = 0;
 }
 
-cpu_logs::cpu_logs (int ncpu)
+cpu_logs::cpu_logs (int ncpu, const char *cpufamily, const char *cpumodel)
 {
     m_ncpu = ncpu;
 
-    InitInternal ();
+    m_cpu_nb_fv_levels  = get_cpu_nb_fv_levels (cpufamily, cpumodel);
+    m_cpu_nb_fv_levels_1 = m_cpu_nb_fv_levels + 1;
+    m_cpu_boot_fv_level = get_cpu_boot_fv_level (cpufamily, cpumodel);
+    m_cpu_fv_percents   = get_cpu_fv_percents (cpufamily, cpumodel);
+    m_cpu_fvs           = get_cpu_fvs (cpufamily, cpumodel);
+    m_cycles_max_fv_per_ns = m_cpu_fvs[m_cpu_nb_fv_levels - 1] / ((double) 1000);
+
+    internal_init ();
 }
 
 cpu_logs::~cpu_logs ()
@@ -95,20 +104,20 @@ void close_chrono_cpu_fvs ()
     s_nb_chrono_cpu_fvs = 0;
 }
 
-void cpu_logs::InitInternal ()
+void cpu_logs::internal_init ()
 {
     int					i, cpu;
 
-    m_ns_time_at_fv = new unsigned long long [m_ncpu][NO_FV_LEVELS];
-    m_ns_time_at_fv_prev = new unsigned long long [m_ncpu][NO_FV_LEVELS];
+    m_ns_time_at_fv = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
+    m_ns_time_at_fv_prev = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
     m_hword_ncycles = new unsigned long [m_ncpu];
 
     for (cpu = 0; cpu < m_ncpu; cpu++)
     {
-        for (i = 0; i < NO_FV_LEVELS; i++)
+        for (i = 0; i < m_cpu_nb_fv_levels_1; i++)
         {
-            m_ns_time_at_fv[cpu][i] = 0;
-            m_ns_time_at_fv_prev[cpu][i] = 0;
+            macro_ns_time_at_fv[cpu][i] = 0;
+            macro_ns_time_at_fv_prev[cpu][i] = 0;
         }
         m_hword_ncycles[cpu] = (unsigned long) -1;
     }
@@ -214,9 +223,9 @@ void cpu_logs::InitInternal ()
     #endif
 }
 
-void cpu_logs::AddTimeAtFv (int cpu, int fvlevel, unsigned long long time)
+void cpu_logs::add_time_at_fv (int cpu, int fv_level, unsigned long long time)
 {
-    m_ns_time_at_fv[cpu][fvlevel] += time;
+    macro_ns_time_at_fv[cpu][fv_level] += time;
 }
 
 unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
@@ -225,9 +234,9 @@ unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
     if (m_hword_ncycles[cpu] == (unsigned long)-1)
     {
         unsigned long long	sum = 0;
-        for (int i = 0; i < NO_FV_LEVELS; i++)
-            sum += (unsigned long long) (m_ns_time_at_fv[cpu][i] * g_cpu_fv_percents[i] *
-                                         ((double) SYSTEM_CLOCK_FV / 1000000000));
+        for (int i = 0; i < m_cpu_nb_fv_levels_1; i++)
+            sum += (unsigned long long) (macro_ns_time_at_fv[cpu][i] * 
+                m_cpu_fv_percents[i] * m_cycles_max_fv_per_ns);
         ret = sum & 0xFFFFFFFF;
         m_hword_ncycles[cpu] = sum >> 32;
     }
@@ -240,7 +249,7 @@ unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
     return ret;
 }
 
-void cpu_logs::UpdateFvGrf ()
+void cpu_logs::update_fv_grf ()
 {
     static int				cnt = 0;	
     if (++cnt < m_ncpu)
@@ -260,8 +269,9 @@ void cpu_logs::UpdateFvGrf ()
         for (cpu = 0; cpu < m_ncpu; cpu++)
         {
             fprintf (file_fv, "CPU %2d          \t", cpu);
-            for (i = 0; i < NO_FV_LEVELS; i++)
-                fprintf (file_fv, "%15llu\t", m_ns_time_at_fv[cpu][NO_FV_LEVELS - 1 - i] / 1000);
+            for (i = 0; i < m_cpu_nb_fv_levels_1; i++)
+                fprintf (file_fv, "%15llu\t", 
+                    macro_ns_time_at_fv[cpu][m_cpu_nb_fv_levels_1 - 1 - i] / 1000);
             fprintf (file_fv, "\n");
         }
     }	
@@ -282,10 +292,10 @@ void cpu_logs::UpdateFvGrf ()
             s1 = 0;
             s2 = 0;
 
-            for (i = 0; i < NO_FV_LEVELS; i++)
+            for (i = 0; i < m_cpu_nb_fv_levels_1; i++)
             {
-                diff = m_ns_time_at_fv[cpu][i] - m_ns_time_at_fv_prev[cpu][i];
-                s1 += diff * g_cpu_fv_percents[i];
+                diff = macro_ns_time_at_fv[cpu][i] - macro_ns_time_at_fv_prev[cpu][i];
+                s1 += diff * m_cpu_fv_percents[i];
                 s2 += diff;
             }
 
@@ -293,7 +303,8 @@ void cpu_logs::UpdateFvGrf ()
                 val[cpu] = (unsigned long) (s1 / s2);
         }
         writepipe (m_pipe_grf_run_at_fv, val, m_ncpu);
-        memcpy (m_ns_time_at_fv_prev, m_ns_time_at_fv, m_ncpu * NO_FV_LEVELS * sizeof (unsigned long long));
+        memcpy (macro_ns_time_at_fv_prev, macro_ns_time_at_fv,
+            m_ncpu * m_cpu_nb_fv_levels_1 * sizeof (unsigned long long));
     }
     #endif
 }

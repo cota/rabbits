@@ -24,6 +24,7 @@
 #include <qemu_wrapper_cts.h>
 #include <cpu_logs.h>
 #include <dlfcn.h>
+#include <etrace_if.h>
 
 #include <../../qemu/qemu-0.9.1/systemc_imports.h>
 
@@ -33,6 +34,10 @@
 #define DCOUT cout
 #else
 #define DCOUT if(0) cout
+#endif
+
+#if defined(ENERGY_TRACE_ENABLED) && !defined(ETRACE_NB_CPU_IN_GROUP)
+#define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
 qemu_wrapper                *qemu_wrapper::s_wrappers[20];
@@ -134,16 +139,40 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
         m_cpu_interrupts_raw_status[i] = 0;
     }
 
-    m_logs = new cpu_logs (m_ncpu);
+    m_logs = new cpu_logs (m_ncpu, cpufamily, cpumodel);
+
+    #ifdef ENERGY_TRACE_ENABLED
+    int             etrace_group_id;
+    unsigned long   periph_id;
+    char            etrace_group_name[50];
+    #endif
 
     m_cpus = new qemu_cpu_wrapper_t * [m_ncpu];
     for (int i = 0; i < m_ncpu; i++)
     {
         char			*s = new char [50];
         sprintf (s, "qemu-cpu-%d", i);
-        m_cpus[i] = new qemu_cpu_wrapper_t(s, m_qemu_instance, 
+        m_cpus[i] = new qemu_cpu_wrapper_t (s, m_qemu_instance,
                                            node + i, i, m_logs, &m_qemu_import);
         m_cpus[i]->m_port_access (*this);
+
+        #ifdef ENERGY_TRACE_ENABLED
+        if ((i % ETRACE_NB_CPU_IN_GROUP) == 0)
+        {
+            etrace_group_id = -1;
+            int end_cpu = i + ETRACE_NB_CPU_IN_GROUP - 1;
+            if (end_cpu > m_ncpu - 1)
+                end_cpu = m_ncpu - 1;
+            if (i == end_cpu)
+                sprintf (etrace_group_name, "CPU %d", i);
+            else
+                sprintf (etrace_group_name, "CPU %d-%d", i, end_cpu);
+        }
+        sprintf (buf, "CPU %d", i);
+        periph_id = etrace.add_periph (buf, get_cpu_etrace_class (cpufamily, cpumodel),
+            etrace_group_id, etrace_group_name);
+        m_cpus[i]->set_etrace_periph_id (periph_id);
+        #endif
     }
 
     SC_THREAD (stnoc_interrupts_thread);
@@ -344,17 +373,17 @@ unsigned long qemu_wrapper::get_cpu_ncycles (unsigned long cpu)
     return m_cpus[cpu - m_firstcpuindex]->get_cpu_ncycles ();
 }
 
-uint64 qemu_wrapper::get_no_instr_cpu (int cpu)
+uint64 qemu_wrapper::get_no_cycles_cpu (int cpu)
 {
     uint64                      i, ret = 0;
     if (cpu == -1)
     {
         for (i = 0; i < s_nwrappers; i++)
             for (cpu = 0; cpu < s_wrappers[i]->m_ncpu; cpu++)
-                ret += s_wrappers[i]->m_cpus[cpu]->get_no_instr ();
+                ret += s_wrappers[i]->m_cpus[cpu]->get_no_cycles ();
     }
     else
-        ret = m_cpus[cpu - m_firstcpuindex]->get_no_instr ();
+        ret = m_cpus[cpu - m_firstcpuindex]->get_no_cycles ();
 
     return ret;
 }

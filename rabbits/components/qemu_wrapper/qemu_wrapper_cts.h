@@ -39,11 +39,11 @@
 #define GET_SYSTEMC_CPU4_NCYCLES					0x0030
 #define GET_SYSTEMC_INT_ENABLE  					0x0040
 #define GET_SYSTEMC_INT_STATUS  					0x0044
-#define GET_ALL_CPUS_NO_INSTR                       0x0050
-#define GET_NO_INSTR_CPU1                           0x0054
-#define GET_NO_INSTR_CPU2                           0x0058
-#define GET_NO_INSTR_CPU3                           0x005C
-#define GET_NO_INSTR_CPU4                           0x0060
+#define GET_ALL_CPUS_NO_CYCLES                      0x0050
+#define GET_NO_CYCLES_CPU1                          0x0054
+#define GET_NO_CYCLES_CPU2                          0x0058
+#define GET_NO_CYCLES_CPU3                          0x005C
+#define GET_NO_CYCLES_CPU4                          0x0060
 #define GET_SYSTEMC_MAX_INT_PENDING				    0x0080
 #define GET_SECONDARY_STARTUP_ADDRESS               0x0084
 

@@ -17,15 +17,58 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-unsigned long   g_cpu_fv[] = {1000, 750, 500, 250, 0};
+#include <cpu_fvs.h>
 
-double          g_cpu_fv_percents[] = {
-    ((double) 1000 * 100) / 1000,
-    ((double)  750 * 100) / 1000,
-    ((double)  500 * 100) / 1000,
-    ((double)  250 * 100) / 1000,
-    ((double)    0 * 100) / 1000
+static unsigned long   arm_cpu_fv[] = {25, 50, 100, 150, 200, 250, 300, 0};
+
+static double          arm_cpu_fv_percents[] = {
+    ((double)  25 * 100) / 300,
+    ((double)  50 * 100) / 300,
+    ((double) 100 * 100) / 300,
+    ((double) 150 * 100) / 300,
+    ((double) 200 * 100) / 300,
+    ((double) 250 * 100) / 300,
+    ((double) 300 * 100) / 300,
+    ((double)   0 * 100) / 300
 };
+
+int get_cpu_nb_fv_levels (const char *cpufamily, const char *cpumodel)
+{
+    return sizeof (arm_cpu_fv) / sizeof (arm_cpu_fv[0]) - 1;
+}
+
+int get_cpu_boot_fv_level (const char *cpufamily, const char *cpumodel)
+{
+    return sizeof (arm_cpu_fv) / sizeof (arm_cpu_fv[0]) - 2;
+}
+
+double *get_cpu_fv_percents (const char *cpufamily, const char *cpumodel)
+{
+    return arm_cpu_fv_percents;
+}
+
+unsigned long  *get_cpu_fvs (const char *cpufamily, const char *cpumodel)
+{
+    return arm_cpu_fv;
+}
+
+#ifdef ENERGY_TRACE_ENABLED
+static uint64_t        etrace_arm_class_mode_cost[] =
+    {23, 83, 26, 90, 29, 97, 34, 123, 38, 143, 60, 215, 90, 320};
+static periph_class_t  etrace_arm_class =
+{
+    /*.class_name = */"ARM_CPU",
+    /*.max_energy_ms = */400,
+    /*.nmodes = */2,
+    /*.nfvsets = */7,
+    /*.mode_cost = */etrace_arm_class_mode_cost
+};
+
+periph_class_t *get_cpu_etrace_class (const char *cpufamily, const char *cpumodel)
+{
+    return &etrace_arm_class;
+}
+#endif
 
 /*
  * Vim standard variables

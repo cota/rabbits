@@ -25,25 +25,33 @@
 class cpu_logs
 {
 public:
-    cpu_logs (int ncpu);
+    cpu_logs (int ncpu, const char *cpufamily, const char *cpumodel);
     ~cpu_logs ();
 
 public:
-    void AddTimeAtFv (int cpu, int fvlevel, unsigned long long time);
+    void add_time_at_fv (int cpu, int fv_level, unsigned long long time);
     unsigned long get_cpu_ncycles (unsigned long cpu);
-    void UpdateFvGrf ();
+    void update_fv_grf ();
 
 protected:
-    void InitInternal ();
+    void internal_init ();
 
 protected:
     int					m_ncpu;
-    unsigned long long	(*m_ns_time_at_fv)[NO_FV_LEVELS];
-    unsigned long long	(*m_ns_time_at_fv_prev)[NO_FV_LEVELS];
+    unsigned long long	*m_ns_time_at_fv;
+    unsigned long long	*m_ns_time_at_fv_prev;
     unsigned long		*m_hword_ncycles;
     FILE				*file_fv;
     int					m_pipe_grf_run_at_fv;
     int					m_pid_grf_run_at_fv;
+    int                 m_cpu_nb_fv_levels_1;
+
+public:
+    int                 m_cpu_nb_fv_levels;
+    double              *m_cpu_fv_percents;
+    unsigned long       *m_cpu_fvs;
+    int                 m_cpu_boot_fv_level;
+    double              m_cycles_max_fv_per_ns;
 };
 
 #endif
