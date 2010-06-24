@@ -251,11 +251,6 @@ unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
 
 void cpu_logs::update_fv_grf ()
 {
-    static int				cnt = 0;	
-    if (++cnt < m_ncpu)
-        return;
-    cnt = 0;
-
     int						i, cpu;
 
     #ifdef TIME_AT_FV_LOG_FILE
@@ -279,11 +274,8 @@ void cpu_logs::update_fv_grf ()
 
     #ifdef TIME_AT_FV_LOG_GRF
     //"time at fv" grf
-    static int			cnt2 = 0;
-    if (m_pipe_grf_run_at_fv && ++cnt2 == 2)
+    if (m_pipe_grf_run_at_fv)
     {
-        cnt2 = 0;
-
         double					s1, s2, diff;
         unsigned char			val[32];
         for (cpu = m_ncpu - 1; cpu >= 0; cpu--)

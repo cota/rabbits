@@ -60,6 +60,7 @@ public:
 private:
     //threads
     void stnoc_interrupts_thread ();
+    void timeout_thread ();
 
 public:
     //ports

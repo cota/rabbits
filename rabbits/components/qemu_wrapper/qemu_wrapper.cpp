@@ -40,6 +40,8 @@
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
+#define CPU_TIMEOUT			20000000
+
 qemu_wrapper                *qemu_wrapper::s_wrappers[20];
 int                         qemu_wrapper::s_nwrappers = 0;
 
@@ -176,6 +178,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     }
 
     SC_THREAD (stnoc_interrupts_thread);
+    SC_THREAD (timeout_thread);
 }
 
 qemu_wrapper::~qemu_wrapper ()
@@ -224,6 +227,22 @@ void qemu_wrapper::set_base_address (unsigned long base_address)
 
     for (int i = 0; i < m_ncpu; i++)
         m_cpus[i]->set_base_address (base_address);
+}
+
+void qemu_wrapper::timeout_thread ()
+{
+    #ifdef TIME_AT_FV_LOG_GRF
+    while (1)
+    {
+        wait (CPU_TIMEOUT, SC_NS);
+
+        for (int i = 0; i < m_ncpu; i++)
+            m_cpus[i]->sync ();
+        wait (0, SC_NS);
+
+        m_logs->update_fv_grf ();
+    }
+    #endif
 }
 
 class my_sc_event_or_list : public sc_event_or_list
