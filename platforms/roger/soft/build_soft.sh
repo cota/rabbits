@@ -86,7 +86,7 @@ linux_install(){
 }
 
 initrd_install(){
-    
+
     print_step "Creating InitRD ..."
 
     cd ${HERE}/initrd/scripts
@@ -97,7 +97,7 @@ initrd_install(){
 
     cd ${HERE}/initrd
     ./make_initramfs.sh || return
-	
+
 
     touch ${STAMPS_DIR}/initrd_installed
 }
@@ -124,7 +124,7 @@ else
 	exit
 fi
 
-sanity_checks | install_error
+sanity_checks || install_error
 
 [ -e ${STAMPS_DIR}/linux_installed ] || \
     linux_install || install_error
