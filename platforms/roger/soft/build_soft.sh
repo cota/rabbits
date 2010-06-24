@@ -43,6 +43,37 @@ print_error(){
     echo -en " \033[00m"
 }
 
+sanity_checks(){
+
+	GIT=`which git`
+
+	if [ -z "${GIT}" ]; then 
+		echo "You need to install git (version above 1.6.8)"
+		exit
+	fi
+
+	GIT_VER=`${GIT} --version | cut -f3 -d' '`
+
+	case ${GIT_VER} in
+
+		1.[1-5].* | 1.6.[1-7].*)
+			echo "Your version of git is too old"
+			echo " Recommended version: above 1.6.8"
+			echo " your version: ${GIT_VER}"
+			exit
+			;;
+		1.6.[8-9].* | 1.[7-9].*)
+			# Version OK
+			#echo "git version OK"
+			;;
+		*)
+			# sink point
+			echo "Error in git version check"
+			exit
+			;;
+	esac
+}
+
 linux_install(){
 
     print_step "Installing and compiling Linux ..."
@@ -55,7 +86,7 @@ linux_install(){
 }
 
 initrd_install(){
-    
+
     print_step "Creating InitRD ..."
 
     cd ${HERE}/initrd/scripts
@@ -66,7 +97,7 @@ initrd_install(){
 
     cd ${HERE}/initrd
     ./make_initramfs.sh || return
-	
+
 
     touch ${STAMPS_DIR}/initrd_installed
 }
@@ -86,7 +117,14 @@ STAMPS_DIR=${HERE}/.stamps
 
 mkdir -p ${STAMPS_DIR}
 
-. ./soft_env
+if [ -e ./soft_env ]; then
+	source ./soft_env
+else
+	echo "You need to set the soft_env file using the soft_env.example"
+	exit
+fi
+
+sanity_checks || install_error
 
 [ -e ${STAMPS_DIR}/linux_installed ] || \
     linux_install || install_error

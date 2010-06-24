@@ -39,4 +39,4 @@ export CROSS_COMPILE=${RABBITS_CROSS_COMPILE}
 
 echo "Compiling Linux ..."
 
-make zImage || exit
+make zImage &> ${LOG_DIR}/compile.log || exit

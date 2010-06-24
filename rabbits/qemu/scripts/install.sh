@@ -36,15 +36,6 @@ mkdir -p ${LOG_DIR}
 rm -fr ../libs
 mkdir -p ../libs
 
-gv=`git --version|cut -d " " -f 3`
-gv1=${gv%%\.*}
-gv2=${gv#*\.}
-gv2=${gv2%%\.*}
-
-if [ $gv1 -lt 1 ] || [ $gv1 -eq 1 -a $gv2 -lt 7 ] ; then
-    failwith "Your git version: $gv. Needed >= 1.7.0.4"
-fi
-
 if [ -e ${QEMU_DIR} ]; then
     echo "Pulling git (sls_repository)"
     cd ${QEMU_DIR}

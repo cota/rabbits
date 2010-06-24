@@ -28,38 +28,17 @@ CONFIG_FILE=config-${LINUX_VER}-roger
 
 cd ..
 
-#if [ ! -e ${LINUX_ARCHIVE} ]; then
-#    echo "Retrieving linux kernel archive ..." 
-#    wget -q ${KERNEL_REP}${LINUX_ARCHIVE} || exit
-#fi
-
-#echo "Uncompressing the kernel ..."
-#tar jxf ${LINUX_ARCHIVE} || exit
-
 if [ -d ${LINUX_DIR}/.git/ ]; then
     (
 	cd ${LINUX_DIR}
-	git pull ${KERNEL_REP} roger
+	echo "Pulling Linux git repo (sls repository) ..."
+	git pull -q ${KERNEL_REP} roger
     )
 else
     rm -fr ${LINUX_DIR}
-    git clone ${KERNEL_REP} -b roger ${LINUX_DIR}
+    echo "Cloning Linux git repo (sls repository) ..."
+    git clone -q ${KERNEL_REP} -b roger ${LINUX_DIR}
 fi
-
-#echo "Applying patches ..."
-#if [ -e ${PATCH_DIR}/${LINUX_VER} ]; then
-#    PATCHES=`ls ${PATCH_DIR}/${LINUX_VER}/*`
-#fi
-#if [ ! -z "${PATCHES}" ]; then
-#    for i in ${PATCHES}; do
-#	echo "Applying patch "$i
-#	patch -p1 -d ${LINUX_DIR} < $i || exit
-#    done
-#else
-#    echo "No patch applied"
-#fi
 
 echo "Configuring kernel ..."
 cp ${CONFIGS_DIR}/${CONFIG_FILE} ${LINUX_DIR}/.config
-
-echo "Now ready to be compiled !!!"
