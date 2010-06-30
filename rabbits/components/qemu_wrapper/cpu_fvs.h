@@ -20,6 +20,7 @@
 #ifndef _CPU_FVS_H_
 #define _CPU_FVS_H_
 
+#include <cfg.h>
 #include <etrace_if.h>
 
 int get_cpu_nb_fv_levels (const char *cpufamily, const char *cpumodel);

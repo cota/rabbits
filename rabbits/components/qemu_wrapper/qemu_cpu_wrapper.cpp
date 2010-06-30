@@ -17,6 +17,7 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
 #include <qemu_cpu_wrapper.h>
 #include <qemu_imported.h>
 #include <qemu_wrapper_cts.h>
@@ -25,7 +26,6 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
-#include <cfg.h>
 #include <etrace_if.h>
 #include <../../qemu/qemu-0.9.1/qemu_systemc.h>
 

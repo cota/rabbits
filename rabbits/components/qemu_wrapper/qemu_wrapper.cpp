@@ -17,6 +17,7 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
 #include <qemu_wrapper.h>
 #include <qemu_cpu_wrapper.h>
 #include <qemu_imported.h>

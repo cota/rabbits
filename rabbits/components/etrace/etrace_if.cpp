@@ -1,3 +1,4 @@
+#include <cfg.h>
 #include <etrace_if.h>
 
 #ifdef ENERGY_TRACE_ENABLED
