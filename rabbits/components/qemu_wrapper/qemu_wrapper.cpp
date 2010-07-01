@@ -429,8 +429,8 @@ qemu_wrapper::invalidate_address (unsigned long addr, unsigned int node_id)
         for (j = 0; j < qw->m_ncpu; j++)
             if (qw->m_cpus[j]->m_node_id == node_id)
                 break;
-            qw->m_qemu_import.qemu_invalidate_address (
-                qw->m_qemu_instance, addr, j);
+        qw->m_qemu_import.qemu_invalidate_address (qw->m_qemu_instance, 
+                                                   addr, j);
     }
 }
 

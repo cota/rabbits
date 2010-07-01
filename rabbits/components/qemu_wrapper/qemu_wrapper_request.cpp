@@ -52,7 +52,7 @@ qemu_wrapper_requests::~qemu_wrapper_requests ()
     {
         p = m_headFree;
         m_headFree = m_headFree->m_next;
-        delete m_headFree;
+        delete p;
     }
 }
 
