@@ -114,6 +114,7 @@ void master_device::send_req(unsigned char tid, unsigned long addr,
     req.trdid   = tid;
     req.srcid   = m_node_id;
     req.eop     = 1;
+    memset(&req.wdata, 0, 8);
 
     if(bWrite){
         for (i = 0; i < bytes; i++)
