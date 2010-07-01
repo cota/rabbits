@@ -33,8 +33,6 @@
 #define DCOUT if (0) cout
 #endif
 
-#define TIMER_DIV 10
-
 sl_mailbox_device::sl_mailbox_device (sc_module_name module_name, int nb_mailbox) : slave_device (module_name)
 {
 
