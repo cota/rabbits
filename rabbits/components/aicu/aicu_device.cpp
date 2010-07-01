@@ -338,7 +338,7 @@ void aicu_device::irq_update_thread ()
             
             // IRQ status up to date.
             for(j = 0; j < (L + G); j++){
-                if(m_stat[i] & (1 << j)){
+                if((m_stat[i] & m_mask[i]) & (1 << j)){
                     m_crt_irq[i] = j;
                     DPRINTF("Raising IRQ%d for OUT%d\n", j, i);
                     break;
