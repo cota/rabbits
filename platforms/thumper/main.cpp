@@ -147,7 +147,7 @@ int sc_main (int argc, char ** argv)
 
 
     qemu1.get_cpu(0)->systemc_qemu_write_memory (QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
-                                                 0xFF /* 16 processors */, 4, 0);
+                                                 0xFFFF /* 16 processors */, 4, 0);
 
     sc_start ();
 
