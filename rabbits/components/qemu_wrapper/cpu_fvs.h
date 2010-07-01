@@ -20,7 +20,9 @@
 #ifndef _CPU_FVS_H_
 #define _CPU_FVS_H_
 
+#ifdef ENERGY_TRACE_ENABLED
 #include <etrace_if.h>
+#endif
 
 int get_cpu_nb_fv_levels (const char *cpufamily, const char *cpumodel);
 int get_cpu_boot_fv_level (const char *cpufamily, const char *cpumodel);

@@ -26,8 +26,11 @@
 #include <sys/time.h>
 #include <time.h>
 #include <cfg.h>
-#include <etrace_if.h>
 #include <../../qemu/qemu-0.9.1/qemu_systemc.h>
+
+#ifdef ENERGY_TRACE_ENABLED
+#include <etrace_if.h>
+#endif
 
 #include <master_device.h>
 

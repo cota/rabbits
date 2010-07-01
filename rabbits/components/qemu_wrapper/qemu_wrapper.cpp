@@ -24,7 +24,10 @@
 #include <qemu_wrapper_cts.h>
 #include <cpu_logs.h>
 #include <dlfcn.h>
+
+#ifdef ENERGY_TRACE_ENABLED
 #include <etrace_if.h>
+#endif
 
 #include <../../qemu/qemu-0.9.1/systemc_imports.h>
 
@@ -270,8 +273,9 @@ void qemu_wrapper::stnoc_interrupts_thread ()
                     {
                         if (val & m_interrupts_enable)
                         {
-                            if (!m_cpu_interrupts_status[cpu])
+                            if (!m_cpu_interrupts_status[cpu]){
                                 bup[cpu] = true;
+                            }
                             m_cpu_interrupts_status[cpu] |= val;
                         }
                         m_cpu_interrupts_raw_status[cpu] |= val;
