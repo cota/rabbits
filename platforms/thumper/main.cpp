@@ -96,6 +96,7 @@ int sc_main (int argc, char ** argv)
 
     // Connecting Qemu to AICU (IRQ wires);
     int              *int_cpu_mask = new int [is.no_cpus];
+    //int int_cpu_mask[] = {1, 2};
     sc_signal<bool>  *wires_irq_qemu = new sc_signal<bool>[is.no_cpus];
 
     for(i = 0; i < is.no_cpus; i++){
@@ -146,7 +147,7 @@ int sc_main (int argc, char ** argv)
 
 
     qemu1.get_cpu(0)->systemc_qemu_write_memory (QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
-                                                 0x1, 4, 0);
+                                                 0xFF /* 16 processors */, 4, 0);
 
     sc_start ();
 
