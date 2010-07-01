@@ -23,11 +23,13 @@ rabbits/qemu/qemu-0.9.1/
 
 rabbits/tools/ramdac/build/
 rabbits/tools/ramdac/src/xramdac.o
+rabbits/tools/ramdac/xramdac
 rabbits/tools/tty_term_rw
 rabbits/tools/xramdac
 rabbits/tools/xterm_rw/tty_term_rw
 rabbits/tools/xramdac
 rabbits/tools/chronograph
 rabbits/tools/chronograph_src/chronograph.o
+rabbits/tools/chronograph_src/chronograph
 rabbits/tools/chronograph_src/deps.mak
 
