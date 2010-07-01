@@ -27,6 +27,25 @@ print_error(){
 
 sanity_checks(){
 
+	ARCH=`uname -m`
+
+	case ${ARCH} in
+
+		x86_64)
+			echo "Unsupported architecture: ${ARCH}"
+			echo "-- You can still try to use s/d/chroot to use it in 32bits --"
+			exit
+			;;
+		i*86)
+			echo "Architecture OK"
+			;;
+		
+		*)
+			echo "Unsupported architecture ${ARCH}"
+			exit
+			;;
+	esac
+
 	GIT=`which git`
 
 	if [ -z "${GIT}" ]; then 
