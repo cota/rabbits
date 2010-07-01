@@ -73,7 +73,7 @@ sl_tty_device::sl_tty_device (const char *_name, int ntty) : slave_device (_name
         if (!(s_pid_tty[s_nb_tty++] = fork ()))
         {
             setpgrp();
-            sprintf (slog, "logCPU%02d", i);
+            sprintf (slog, "%s%02d", _name, i);
             sprintf (sname, "CPU %d", i);
 
             if (execlp ("xterm",
@@ -149,6 +149,8 @@ void sl_tty_device::write (unsigned long ofs, unsigned char be, unsigned char *d
         DPRINTF("TTY_WRITE[%d]: 0x%x (%c)\n", tty, (char)value, (char) value);
         ::write (pout[tty], &value, 1);
         break;
+        
+
     default:
         printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
                 name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,

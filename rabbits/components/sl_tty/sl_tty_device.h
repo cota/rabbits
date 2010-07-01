@@ -23,11 +23,11 @@
 #include <slave_device.h>
 
 enum sl_tty_registers {
-    TTY_WRITE = 0,
+    TTY_WRITE  = 0,
     TTY_STATUS = 1,
-    TTY_READ  = 2,
+    TTY_READ   = 2,
     /**/
-    TTY_SPAN  = 4,
+    TTY_SPAN   = 4,
 };
 
 
