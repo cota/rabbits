@@ -30,6 +30,10 @@ enum sl_mailbox_registers {
     MAILBOX_SPAN    	= 4,
 };
 
+enum sl_mailbox_status_register{
+    MAILBOX_CLEAR       = 0,
+    MAILBOX_NEW_MESSAGE = 1,
+};
 
 class sl_mailbox_device : public slave_device
 {
@@ -59,6 +63,7 @@ private:
 
     uint32_t            *m_command;
     uint32_t            *m_data;
+    uint32_t            *m_status;
 };
 
 #endif

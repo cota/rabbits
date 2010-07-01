@@ -35,13 +35,22 @@
 
 sl_mailbox_device::sl_mailbox_device (sc_module_name module_name, int nb_mailbox) : slave_device (module_name)
 {
+    int i = 0;
 
     irq = new sc_out<bool>[nb_mailbox];
 
     m_nb_mailbox = nb_mailbox;
 
     m_command    = new uint32_t[nb_mailbox];
-    m_data      = new uint32_t[nb_mailbox];
+    m_data       = new uint32_t[nb_mailbox];
+    m_status     = new uint32_t[nb_mailbox];
+
+    for(i = 0; i < nb_mailbox; i++){
+        m_command[i] = 0;
+        m_data[i]    = 0;
+        m_status[i]  = 0;
+    }
+
 }
 
 sl_mailbox_device::~sl_mailbox_device ()
@@ -52,6 +61,7 @@ void sl_mailbox_device::write (unsigned long ofs, unsigned char be, unsigned cha
 {
     uint32_t                value;
     uint32_t mailbox;
+    int lcl_ofs;
 
     ofs >>= 2;
     if (be & 0xF0)
@@ -63,24 +73,26 @@ void sl_mailbox_device::write (unsigned long ofs, unsigned char be, unsigned cha
         value = * ((uint32_t *) data + 0);
 
     mailbox = ofs / MAILBOX_SPAN;
-    ofs = ofs % MAILBOX_SPAN;
+    lcl_ofs = ofs % MAILBOX_SPAN;
 
-    switch (ofs)
+    switch (lcl_ofs)
     {
 
     case MAILBOX_COMM_ADR:
-        DPRINTF("MAILBOX_COMM_ADR write: %x\n", value);
+        DPRINTF("MAILBOX_COMM_ADR[%d] write: 0x%08x\n", mailbox, value);
         m_command[mailbox] = value;
+        m_status[mailbox]  = MAILBOX_NEW_MESSAGE;
         irq[mailbox]       = true;
         break;
 
     case MAILBOX_DATA_ADR:
-        DPRINTF("MAILBOX_DATA_ADR write: %x\n", value);
+        DPRINTF("MAILBOX_DATA_ADR[%d] write: 0x%08x\n", mailbox, value);
         m_data[mailbox]  = value;
         break;
 
     case MAILBOX_RESET_ADR:
-        DPRINTF("MAILBOX_RESET_ADR write: %x\n", value);
+        DPRINTF("MAILBOX_RESET_ADR[%d] write: 0x%x\n", mailbox, value);
+        m_status[mailbox] = MAILBOX_CLEAR;
         irq[mailbox] = false;
         break;
 
@@ -99,8 +111,10 @@ void sl_mailbox_device::write (unsigned long ofs, unsigned char be, unsigned cha
 
 void sl_mailbox_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
-    int             i;
+    int        i;
+    int        mailbox = 0;
     uint32_t  *val = (uint32_t *)data;
+    int        lcl_ofs = 0; 
 
     ofs >>= 2;
     if (be & 0xF0)
@@ -111,12 +125,24 @@ void sl_mailbox_device::read (unsigned long ofs, unsigned char be, unsigned char
 
     *val = 0;
 
-    switch (ofs)
+    mailbox = ofs / MAILBOX_SPAN;
+    lcl_ofs = ofs % MAILBOX_SPAN;
+
+    switch (lcl_ofs)
     {
     case MAILBOX_COMM_ADR:
+        *val = m_command[mailbox];
+        DPRINTF("MAILBOX_COMM_ADR[%d] read: 0x%08x\n", mailbox, *val);
+        break;
+
     case MAILBOX_DATA_ADR:
+        *val = m_data[mailbox];
+        DPRINTF("MAILBOX_DATA_ADR[%d] read: 0x%08x\n", mailbox, *val);
+        break;
+
     case MAILBOX_RESET_ADR:
-        DPRINTF("MAILBOX read: %x\n", ofs);
+        *val = m_status[mailbox];
+        DPRINTF("MAILBOX_RESET_ADR[%d] read: 0x%x\n", mailbox, *val);
         break;
 
     default:
