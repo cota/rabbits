@@ -36,6 +36,7 @@
 #include <sl_timer_device.h>
 #include <sl_tty_device.h>
 #include <sl_mailbox_device.h>
+#include <aicu_device.h>
 #include <mem_device.h>
 #include <qemu_imported.h>
 
@@ -57,9 +58,6 @@ int sc_main (int argc, char ** argv)
 {
     int             i;
 
-    int n_mb  = 2;
-    int n_tty = 2;
-
     memset (&is, 0, sizeof (init_struct));
     is.cpu_family = "arm";
     is.cpu_model = NULL;
@@ -71,32 +69,57 @@ int sc_main (int argc, char ** argv)
     if (check_init (&is) != 0)
         return 1;
 
+
+    int n_mb  = is.no_cpus;
+
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
-    sl_tty_device     *tty = new sl_tty_device ("tty", n_tty);
-    sl_mailbox_device *mb  = new sl_mailbox_device("mb", n_mb); 
+    sl_tty_device     *tty0 = new sl_tty_device ("tty0", 1);
+    sl_tty_device     *tty1 = new sl_tty_device ("tty1", 1);
+    sl_mailbox_device *mb   = new sl_mailbox_device("mb", n_mb); 
+    aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 0, 2);
 
     slaves[nslaves++] = ram;        // 0
-    slaves[nslaves++] = tty;        // 1
-    slaves[nslaves++] = mb;         // 2
+    slaves[nslaves++] = tty0;       // 1
+    slaves[nslaves++] = tty1;       // 2
+    slaves[nslaves++] = mb;         // 3
+    slaves[nslaves++] = icu;        // 4
 
-    sl_timer_device    *timers[2];
-    int              ntimers = sizeof (timers) / sizeof (sl_timer_device *);
-    for (i = 0; i < ntimers; i++)
+    sl_timer_device    *timers [is.no_cpus];
+    for (i = 0; i < is.no_cpus; i++)
     {
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new sl_timer_device (buf);
-        slaves[nslaves++] = timers[i]; // 3 + i
+        slaves[nslaves++] = timers[i]; // 5 + i
     };
-    int                         no_irqs = ntimers + n_mb;
-    int                         int_cpu_mask [] = {5, 10, 0, 0, 0, 0};
-    sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
-    for (i = 0; i < ntimers; i++)
-        timers[i]->irq (wires_irq_qemu[i]);
-    for (i = 0; i < n_mb; i++)
-        mb->irq[i] (wires_irq_qemu[i+ntimers]);
 
+    // Connecting Qemu to AICU (IRQ wires);
+    int              *int_cpu_mask = new int [is.no_cpus];
+    sc_signal<bool>  *wires_irq_qemu = new sc_signal<bool>[is.no_cpus];
+
+    for(i = 0; i < is.no_cpus; i++){
+        int_cpu_mask[i] = (1<<i);
+        icu->irq_out[i](wires_irq_qemu[i]);
+    }
+
+    // Connecting AICU irq wires to peripherals
+    sc_signal<bool>  *aicu_irq = new sc_signal<bool> [4*is.no_cpus];
+    int aicu_irq_ind = 0;
+
+    for (i = 0; i < is.no_cpus; i++){
+        //fprintf(stderr, "MB%d on AICU_in%d\n", i, aicu_irq_ind);
+        mb->irq[i] (aicu_irq[aicu_irq_ind]);
+        icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
+        aicu_irq_ind++;
+    }
+
+    for (i = 0; i < is.no_cpus; i++){
+        //fprintf(stderr, "Timer%d on AICU_in%d\n", i, aicu_irq_ind);
+        timers[i]->irq (aicu_irq[aicu_irq_ind]);
+        icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
+        aicu_irq_ind++;
+    }
 
     //interconnect
     onoc = new interconnect ("interconnect", is.no_cpus, nslaves);
@@ -106,11 +129,11 @@ int sc_main (int argc, char ** argv)
     arm_load_dnaos (&is);
 
     //masters
-    qemu_wrapper                qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 0, 
+    qemu_wrapper                qemu1 ("QEMU1", 0, is.no_cpus, int_cpu_mask, is.no_cpus, 0, 
                                     is.cpu_family, is.cpu_model, is.ramsize);
     qemu1.add_map (0xC0000000, 0x10000000); // (base address, size)
     qemu1.set_base_address (QEMU_ADDR_BASE);
-    for (i = 0; i < no_irqs; i++)
+    for (i = 0; i < is.no_cpus; i++)
         qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
     for (i = 0; i < is.no_cpus; i++)
         onoc->connect_master_64 (i, qemu1.get_cpu (i)->put_port, qemu1.get_cpu (i)->get_port);

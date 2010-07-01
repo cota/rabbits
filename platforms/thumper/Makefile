@@ -8,6 +8,7 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc $(COMPONENTS)/mem    			 \
 			   $(COMPONENTS)/master_device $(COMPONENTS)/slave_device    \
 			   $(COMPONENTS)/qemu_wrapper $(COMPONENTS)/sl_tty           \
 			   $(COMPONENTS)/sl_timer $(COMPONENTS)/sl_mailbox           \
+			   $(COMPONENTS)/aicu                                        \
                $(PLATFORMS)/thumper
 
 

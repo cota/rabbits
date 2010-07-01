@@ -18,7 +18,7 @@
 # along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-rm -fr logCPU*
+rm -fr tty*
 rm -fr qemu_f*.lst
 
 export PATH=$PWD/../../rabbits/tools:$PATH
