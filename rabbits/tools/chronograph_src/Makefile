@@ -21,18 +21,19 @@ PREFIX =../
 .PHONY: clean all
 
 all: $(EXE)
-	
+
 $(EXE): $(OBJS)
 	@echo Building $@ ...
-	@$(CC) $(LIBDIR) $(OBJS) $(LIBS) -o $(PREFIX)/$@  2>&1 | c++filt
-	
+	@$(CC) $(LIBDIR) $(OBJS) $(LIBS) -o $@  2>&1 | c++filt
+	@cp $@ $(PREFIX)/$@
+
 .cpp.o:
 	@echo Compiling $< ...
 	@$(CC) $(CFLAGS) $(INCDIR) -c $< -o $@
 
 deps.mak:
 	@echo Making deps ....
-	@$(CC) $(CFLAGS) $(INCDIR) -M $(SRCS) >> deps.mak
+	@$(CC) $(CFLAGS) $(INCDIR) -MM $(SRCS) >> deps.mak
 
 -include deps.mak
 

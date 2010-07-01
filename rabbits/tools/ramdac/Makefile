@@ -19,12 +19,12 @@ LDFLAGS = `pkg-config --cflags --libs gtk+-2.0`
 
 .SUFFIXES: .c .o .x
 
-all: $(NAME)
+all: $(BUILDDIR) $(NAME)
 
-$(NAME): $(BUILDDIR) $(OBJS)
-	@$(LD)  $(LDFLAGS)  $(LIBDIR) -o $(BUILDDIR)/$@ $(OBJS) $(LIBS)
+$(NAME): $(OBJS)
+	@$(LD)  $(LDFLAGS)  $(LIBDIR) -o $@ $(OBJS) $(LIBS)
 	@echo "--------| $@"
-	@cp $(BUILDDIR)/$@ ../$@
+	@cp $@ ../$@
 
 .c.o:
 	@$(CC) $(CFLAGS) $(INCDIR) -o $@ -c $<
