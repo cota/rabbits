@@ -17,10 +17,11 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <aicu_device.h>
-#include <cfg.h>
 
 //#define DEBUG_DEVICE_AICU
 

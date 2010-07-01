@@ -20,6 +20,8 @@
 #ifndef _CPU_FVS_H_
 #define _CPU_FVS_H_
 
+#include <cfg.h>
+
 #ifdef ENERGY_TRACE_ENABLED
 #include <etrace_if.h>
 #endif
