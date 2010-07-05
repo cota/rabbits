@@ -80,7 +80,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     m_irq_cpu_mask = 0;
     s_wrappers[s_nwrappers++] = this;
 
-    m_interrupts_status = 0;
+    m_interrupts_raw_status = 0;
     m_interrupts_enable = 0; // disable all interrputs by default (1 << m_ninterrupts) - 1; //enable all interrupts
     if (m_ninterrupts)
     {
@@ -284,34 +284,33 @@ void qemu_wrapper::stnoc_interrupts_thread ()
         {
             if (interrupt_ports[i].posedge ())
             {
+                m_interrupts_raw_status |= val;
                 for (cpu = 0; cpu < m_ncpu; cpu++)
                 {
                     if (m_irq_cpu_mask[i] & (1 << cpu))
                     {
+                        m_cpu_interrupts_raw_status[cpu] |= val;
                         if (val & m_interrupts_enable)
                         {
                             if (!m_cpu_interrupts_status[cpu])
                                 bup[cpu] = true;
                             m_cpu_interrupts_status[cpu] |= val;
                         }
-                        m_cpu_interrupts_raw_status[cpu] |= val;
                     }
                 }
-                if (val & m_interrupts_enable)
-                    m_interrupts_status |= val;
             }
             else
                 if (interrupt_ports[i].negedge ())
                 {
-                    m_interrupts_status &= ~val;
+                    m_interrupts_raw_status &= ~val;
                     for (cpu = 0; cpu < m_ncpu; cpu++)
                     {
-                        m_cpu_interrupts_raw_status[cpu] &= ~val;
-                        m_cpu_interrupts_status[cpu] &= ~val;
                         if (m_irq_cpu_mask[i] & (1 << cpu))
                         {
+                            m_cpu_interrupts_raw_status[cpu] &= ~val;
                             if (val & m_interrupts_enable)
                             {
+                                m_cpu_interrupts_status[cpu] &= ~val;
                                 if (!m_cpu_interrupts_status[cpu])
                                     bdown[cpu] = true;
                             }
@@ -324,7 +323,7 @@ void qemu_wrapper::stnoc_interrupts_thread ()
 
         for (cpu = 0; cpu < m_ncpu; cpu++)
         {
-            if (bup[cpu])
+            if (bup[cpu] && !m_cpus[cpu]->m_swi)
             {
                 DCOUT << "******INT SENT***** to cpu " << cpu << endl;
                 m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
@@ -369,9 +368,12 @@ void qemu_wrapper::generate_swi (unsigned long cpu_mask, unsigned long swi)
     {
         if (cpu_mask & (1 << cpu))
         {
-            m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
             m_cpus[cpu]->m_swi |= swi;
-            m_cpus[cpu]->wakeup ();
+            if (!m_cpu_interrupts_status[cpu])
+            {
+                m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
+                m_cpus[cpu]->wakeup ();
+            }
         }
     }
 }
@@ -410,7 +412,7 @@ uint64 qemu_wrapper::get_no_cycles_cpu (int cpu)
 
 unsigned long qemu_wrapper::get_int_status ()
 {
-    return m_interrupts_status;
+    return m_interrupts_raw_status & m_interrupts_enable;
 }
 
 unsigned long qemu_wrapper::get_int_enable ()
@@ -423,18 +425,18 @@ void qemu_wrapper::set_int_enable (unsigned long val)
     int            cpu;
     for (cpu = 0; cpu < m_ncpu; cpu++)
     {
-        if (!m_cpu_interrupts_status[cpu] && (m_cpu_interrupts_raw_status[cpu] & val))
+        if (!m_cpu_interrupts_status[cpu] && (m_cpu_interrupts_raw_status[cpu] & val)
+            && !m_cpus[cpu]->m_swi)
             m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 1);
         else
             if (m_cpu_interrupts_status[cpu] && !(m_cpu_interrupts_raw_status[cpu] & val)
                 && !m_cpus[cpu]->m_swi)
                 m_qemu_import.qemu_irq_update (m_qemu_instance, 1 << cpu, 0);
 
-        m_cpu_interrupts_status[cpu] &= m_interrupts_enable;
+        m_cpu_interrupts_status[cpu] = m_cpu_interrupts_raw_status[cpu] & val;
     }
 
     m_interrupts_enable = val;
-    m_interrupts_status &= m_interrupts_enable;
 }
 
 void
