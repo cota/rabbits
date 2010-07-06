@@ -50,5 +50,5 @@ echo "Copying libraries ..."
 #cp -r ${XTOOLS_DIR}/`basename ${CROSS_COMPILE} -`/sys-root/* ${ROOTFS_DIR} 
 cp ${XTOOLS_DIR}/`basename ${CROSS_COMPILE} -`/libc/lib/ld-${RABBITS_LIBC_VERSION}.so ${ROOTFS_DIR}/lib/ld-linux.so.3
 cp ${XTOOLS_DIR}/`basename ${CROSS_COMPILE} -`/libc/lib/libc-${RABBITS_LIBC_VERSION}.so ${ROOTFS_DIR}/lib/libc.so.6
-cp ${XTOOLS_DIR}/`basename ${CROSS_COMPILE} -`/libc/lib/libgcc_s.so.1 ${ROOTFS_DIR}/lib/libgcc_s.so
+cp ${XTOOLS_DIR}/`basename ${CROSS_COMPILE} -`/libc/lib/libgcc_s.so.1 ${ROOTFS_DIR}/lib/libgcc_s.so.1
 
