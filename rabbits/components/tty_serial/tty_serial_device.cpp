@@ -73,7 +73,7 @@ void tty_serial_device::read_thread ()
 
     while (1)
     {
-        wait (100, SC_NS);
+        wait (10, SC_US);
 
         tv.tv_sec = 0;
         tv.tv_usec = 0;
