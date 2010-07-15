@@ -17,6 +17,7 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
 #include <cpu_fvs.h>
 
 static unsigned long   arm_cpu_fv[] = {25, 50, 100, 150, 200, 250, 300, 0};

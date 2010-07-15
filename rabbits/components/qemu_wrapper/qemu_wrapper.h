@@ -60,6 +60,7 @@ public:
 private:
     //threads
     void stnoc_interrupts_thread ();
+    void timeout_thread ();
 
 public:
     //ports
@@ -75,7 +76,7 @@ private:
     // attr
     unsigned long                       *m_cpu_interrupts_raw_status;
     unsigned long                       *m_cpu_interrupts_status;
-    unsigned long                       m_interrupts_status;
+    unsigned long                       m_interrupts_raw_status;
     unsigned long                       m_interrupts_enable;
     int                                 *m_irq_cpu_mask;
 

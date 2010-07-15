@@ -17,6 +17,7 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cfg.h>
 #include <qemu_cpu_wrapper.h>
 #include <qemu_imported.h>
 #include <qemu_wrapper_cts.h>
@@ -25,7 +26,6 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
-#include <cfg.h>
 #include <../../qemu/qemu-0.9.1/qemu_systemc.h>
 
 #ifdef ENERGY_TRACE_ENABLED
@@ -33,8 +33,6 @@
 #endif
 
 #include <master_device.h>
-
-#define CPU_TIMEOUT							10000
 
 static unsigned long                        s_addr_startup_secondary = 0xFFFFFFFF;
 
@@ -89,7 +87,6 @@ qemu_cpu_wrapper::qemu_cpu_wrapper (sc_module_name name,
         gettimeofday (&start_time, NULL);
 
     SC_THREAD (cpu_thread);
-    SC_THREAD (timeout_thread);
 }
 
 qemu_cpu_wrapper::~qemu_cpu_wrapper ()
@@ -192,31 +189,6 @@ void qemu_cpu_wrapper::cpu_thread ()
         }
     }
 }
-
-
-void qemu_cpu_wrapper::timeout_thread ()
-{
-    int				lcnt = 0;
-
-    while (1)
-    {
-        wait (CPU_TIMEOUT, SC_NS);
-
-        m_ev_wakeup.notify ();
-
-        lcnt = (lcnt + 1) % 1000;
-        if (lcnt == 0)
-        {
-            m_ev_sync.notify ();
-            wait (0, SC_NS);
-
-            m_logs->update_fv_grf ();
-        }
-
-        DCOUT << "CPU " << m_cpuindex << " sc_timeout" << endl;
-    }
-}
-
 
 void qemu_cpu_wrapper::set_base_address (unsigned long base_address)
 {
@@ -544,6 +516,11 @@ void qemu_cpu_wrapper::wakeup ()
     m_ev_wakeup.notify ();
 }
 
+void qemu_cpu_wrapper::sync ()
+{
+    m_ev_sync.notify ();
+}
+
 #ifdef ENERGY_TRACE_ENABLED
 void qemu_cpu_wrapper::set_etrace_periph_id (unsigned long id)
 {
@@ -554,7 +531,8 @@ void qemu_cpu_wrapper::set_etrace_periph_id (unsigned long id)
 #endif
 
 void qemu_cpu_wrapper::rcv_rsp(unsigned char tid, unsigned char *data,
-                               bool bErr, bool bWrite){
+                               bool bErr, bool bWrite)
+{
 
     qemu_wrapper_request            *localrq;
 

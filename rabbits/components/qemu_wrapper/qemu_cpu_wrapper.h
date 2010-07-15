@@ -55,6 +55,7 @@ public:
     uint64 get_no_cycles ();
     void wait_wb_empty ();
     void wakeup ();
+    void sync ();
 
     #ifdef ENERGY_TRACE_ENABLED
     //etrace
@@ -64,7 +65,6 @@ public:
 private:
     //threads
     void cpu_thread ();
-    void timeout_thread ();
 
     void rcv_rsp(unsigned char tid, unsigned char *data, bool bErr, bool bWrite);
     /* void send_req(unsigned char tid, unsigned long addr, unsigned char *data, */
