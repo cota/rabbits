@@ -26,133 +26,190 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
-#include <ramdac_device.h>
+#include <sl_framebuffer_device.h>
 
-extern unsigned long no_frames_to_simulate;
+
+//#define DEBUG_DEVICE_FB
+
+#ifdef DEBUG_DEVICE_FB
+#define DPRINTF(fmt, args...)                               \
+    do { printf("sl_fb_device: " fmt , ##args); } while (0)
+#define DCOUT if (1) cout
+#else
+#define DPRINTF(fmt, args...) do {} while(0)
+#define DCOUT if (0) cout
+#endif
+
+#define EPRINTF(fmt, args...)                               \
+    do { fprintf(stderr, "sl_fb_device: " fmt , ##args); } while (0)
 
 static int          pids_ramdac[10];
-static int          nramdac = 0;
+static uint8_t     *shm_addr[10][2];
+static int          shmids[10][2];
+static int          nb_fb = 0;
 
 void close_ramdacs ()
 {
     int         i, status;
 
-    if (nramdac == 0)
+    DPRINTF("close called\n");
+
+    if (nb_fb == 0)
         return;
 
-    for (i = 0; i < nramdac; i++)
+    for (i = 0; i < nb_fb; i++)
     {
+        int j = 0;
+        for(j = 0; j < 2; j++){
+            shmdt(shm_addr[i][j]);
+            shmctl(shmids[i][j], IPC_RMID, NULL);
+        }
+
         //cout << "Killing RAMDAC " << (int) i << endl;
         kill (pids_ramdac[i], SIGKILL);
-        ::wait (&status);
+        ::waitpid (pids_ramdac[i], &status, 0);
     }
 
-    nramdac = 0;
+    nb_fb = 0;
 }
 
-ramdac_device::ramdac_device (const char *_name) : slave_device (_name)
+sl_fb_device::sl_fb_device (const char *_name, int fb_w, int fb_h, int fb_mode)
+: slave_device (_name)
 {
-    ii = 0;
-    nb_images = 0;
-    width = 0;
-    height = 0;
-    m_ready = false;
+    buf_idx = 0;
 
-    if (nramdac == 0)
-        atexit (close_ramdacs);
-}
+    mode   = fb_mode;
 
-ramdac_device::~ramdac_device ()
-{
-}
+    width  = fb_w;
+    height = fb_h;
 
-void ramdac_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
-{
-    unsigned long           val1 = ((unsigned long*)data)[0];
-    unsigned long           val2 = ((unsigned long*)data)[1];
-
-    bErr = false;
-
-    switch (ofs)
-    {
-    case 0:
-        if (!m_ready)
-        {
-            receive_size (val1);
-        }
-        else
-        {
-            unsigned int * ptr;
-            ptr = (unsigned int*) image[ii];
-            ptr[m_y * width * components / 4 + m_x] = val1;
-            m_x = (m_x + 1) % ((width / 4) * components);
-            if (!m_x)
-                m_y = (m_y + 1) % height;
-            if (!m_x && !m_y)
-            {
-                nb_images++;
-                display();
-                //printf ("Image %d\n", nb_images);
-                if (no_frames_to_simulate && nb_images == no_frames_to_simulate)
-                {
-                    if (pid)
-                        kill (pid, SIGTERM);
-                    {
-                        extern void close_ttys ();
-                        close_ttys ();
-                    }
-                    sc_stop ();
-                }
-            }
-        }
-
+    switch(mode){
+    case GREY:
+        rgb_components = 1;
+        yuv_size       = 0;
         break;
-    case 0x880:
+    case RGB32:
+        rgb_components = 3;
+        yuv_size       = 0;
+        break;
+    case YVYU: /* YUV 4:2:2 */
+    case YV16:
+        rgb_components = 3;
+        yuv_size       = 2*width*height;
+        break;
+    case YV12: /* YUV 4:2:0 */
+        rgb_components = 3;
+        yuv_size       = (3*width*height)>>1;
         break;
     default:
-        printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X\n",
-                name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
-                (unsigned int) *((unsigned long*)data + 0), (unsigned int) *((unsigned long*)data + 1));
-        exit (1);
-        break;
+        EPRINTF("Bad mode\n");
     }
+
+    rgb_size = rgb_components*height*width;
+
+    if(yuv_size > 0){
+        int i = 0;
+        for(i = 0; i < 2; i++){
+            yuv_image[i] = (uint8_t *)malloc(sizeof(uint8_t)*yuv_size);
+        }
+
+    }
+
+    DPRINTF("new framebuffer: %dx%d [%dB--0x%xB](%dw--0x%xw)\n", fb_w, fb_h,
+            rgb_size, rgb_size, rgb_size>>2, rgb_size>>2);
+
+    if (nb_fb == 0)
+        atexit (close_ramdacs);
+
+    init_ramdac();
+
+    switch(mode){
+    case GREY:
+    case RGB32:
+        write_buf = rgb_image;
+        mem_size  = rgb_size;
+        break;
+    case YVYU: /* YUV 4:2:2 */
+    case YV16:
+    case YV12: /* YUV 4:2:0 */
+        write_buf = yuv_image;
+        mem_size  = yuv_size; 
+        break;
+    default:
+        EPRINTF("Bad mode\n");
+    }
+
 }
 
-void ramdac_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
+sl_fb_device::~sl_fb_device ()
+{
+
+    DPRINTF("destructor called\n");
+
+}
+
+static uint32_t s_mask[16] = { 0x00000000, 0x000000FF, 0x0000FF00, 0x0000FFFF,
+                               0x00FF0000, 0x00FF00FF, 0x00FFFF00, 0x00FFFFFF,
+                               0xFF000000, 0xFF0000FF, 0xFF00FF00, 0xFF00FFFF,
+                               0xFFFF0000, 0xFFFF00FF, 0xFFFFFF00, 0xFFFFFFFF };
+
+void sl_fb_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
+{
+    uint32_t  *val = (uint32_t *)data;
+    uint32_t   lofs = ofs;
+    uint8_t    lbe  = be;
+
+    uint32_t  *ptr = NULL;
+    uint32_t   tmp = 0;
+    uint32_t   mask = 0;
+
+    bErr = false;
+
+    lofs >>= 2;
+    if (lbe & 0xF0)
+    {
+        lofs  += 1;
+        lbe  >>= 4;
+        val++;
+    }
+
+    if(lofs > (mem_size>>2)){
+        EPRINTF("write outside mem area: %x / %x\n", ofs, mem_size);
+        EPRINTF("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X\n",
+                name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
+                (unsigned int) *((unsigned long*)data + 0),
+                (unsigned int) *((unsigned long*)data + 1));
+        bErr = true;
+        exit(EXIT_FAILURE);
+    }
+
+    if((ofs == 0) && (be & 0x1)){
+        /* Each time we write at the zero position we update */
+        display();
+    }
+
+    ptr = (uint32_t *)write_buf[buf_idx];
+    tmp = ptr[lofs];
+    mask = s_mask[lbe];
+
+    //DPRINTF("write at idx: %x, of val: %x\n", lofs, *val);
+
+    tmp &= ~mask;
+    tmp |= (*val & mask);
+    ptr[lofs] = tmp;
+
+}
+
+void sl_fb_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
     bErr = false;
+    EPRINTF("Bad %s::%s ofs=0x%X, be=0x%X\n", name (), __FUNCTION__,
+            (unsigned int) ofs, (unsigned int) be);
     return;
-    printf ("Bad %s::%s ofs=0x%X, be=0x%X\n", name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
-
 }
 
-void ramdac_device::receive_size (unsigned int data)
-{
-    if (width == 0)
-    {
-        width = data;
-        printf ("width %d\n",width);
-        return;
-    }
 
-    if(height == 0)
-    {
-        height = data;
-        printf("height %d\n",height);
-        return;
-    }
-
-    if (components == 0)
-    {
-        m_ready = true;
-        m_x = m_y = 0;
-        components = data;
-        printf ("components %d\n",components);
-        viewer ();
-    }
-}
-
-void ramdac_device::viewer ()
+void sl_fb_device::init_ramdac ()
 {
     char            xname[80] = "*** The Screen ***";
     int             ppout[2];
@@ -160,12 +217,15 @@ void ramdac_device::viewer ()
     int             i, k;
 
     pipe(ppout);
-    if (!(pid = fork ()))
-    {
+    if( !(pid = fork()) ){
+
         setpgrp();
+        /* close (STDIN_FILENO); */
+        /* dup2 (ppout[0], STDIN_FILENO); */
         close (0);
-        dup (ppout[0]);
-        if (execlp ("xramdac", "xramdac", NULL) == -1)
+        dup2 (ppout[0], 0);
+
+        if (execlp ("xramdac", "xramdac", (char *)NULL) == -1)
         {
             perror ("viewer: execlp failed");
             _exit (1);
@@ -173,42 +233,181 @@ void ramdac_device::viewer ()
     }
     if (pid == -1)
     {
-        perror("viwer: fork failed");
+        perror("viewer: fork failed");
         exit(1);
     }
 
-    pids_ramdac[nramdac++] = pid;
+    DPRINTF("Viewer child: %d\n", pid);
 
+    pids_ramdac[nb_fb] = pid;
     pout = ppout[1];
 
     for (i = 0; i < 2; i++)
     {
         for (k = 1;; k++)
-            if ((shmid[i] = shmget (k, components * width * height * sizeof (char), IPC_CREAT | IPC_EXCL | 0600)) != -1)
+            if ((shmid[i] = shmget (k, rgb_size * sizeof (uint8_t),
+                                    IPC_CREAT | IPC_EXCL | 0600)) != -1)
                 break;
+        DPRINTF("Got shm %x\n", k);
         key[i] = k;
-        image[i] = (char *) shmat (shmid[i], 0, 00200);
-        if (image[i] == (void *) -1)
+
+        rgb_image[i] = (uint8_t *) shmat (shmid[i], 0, 00200);
+        if (rgb_image[i] == (void *) -1)
         {
             perror ("ERROR: Ramdac.shmat");
             exit (1);
         }
+
+        shmids[nb_fb][i]   = shmid[i];
+        shm_addr[nb_fb][i] = rgb_image[i];
     }
 
+
+    nb_fb++;
+    
     ::write (pout, key, sizeof (key));
     ::write (pout, &width, sizeof (int));
     ::write (pout, &height, sizeof (int));
-    ::write (pout, &components, sizeof (unsigned int));
+    ::write (pout, &rgb_components, sizeof (unsigned int));
     ::write (pout, xname, sizeof (xname));
 }
 
-void ramdac_device::display ()
+void sl_fb_device::display (void)
 {
-    ii = (ii + 1) % 2;
+    DPRINTF("display()\n");
+
+    switch(mode){
+    case GREY:
+    case RGB32:
+        /* Nothing to do */
+        break;
+    case YVYU: /* Packed YUV 4:2:2 */
+        convert_frame_yvyu();
+        break;
+    case YV16: /* Planar YUV 4:2:2 */
+        convert_frame_yv16();
+        break;
+    case YV12: /* Planar YUV 4:2:0 */
+        convert_frame_yv12();
+        break;
+    default:
+        EPRINTF("Bad mode\n");
+    }
+
+    buf_idx = (buf_idx + 1) % 2;
     kill (pid, SIGUSR1);
 }
 
-void ramdac_device::rcv_rqst (unsigned long ofs, unsigned char be,
+/* ======================================================= */
+/* Theory ...                                              */
+/* ------------------------------------------------------- */
+/* C = Y - 16                                              */
+/* D = U - 128                                             */
+/* E = V - 128                                             */
+/* R = clip(( 298 * C           + 409 * E + 128) >> 8)     */
+/* G = clip(( 298 * C - 100 * D - 208 * E + 128) >> 8)     */
+/* B = clip(( 298 * C + 516 * D           + 128) >> 8)     */
+/* ======================================================= */
+
+/* ======================================================= */
+/* Practice ...                                            */
+/* ------------------------------------------------------- */
+/* C = Y - 16                                              */
+/* D = U - 128                                             */
+/* E = V - 128                                             */
+/*                                                         */
+/* tmp_r = 409 * E + 128                                   */
+/* tmp_g = -100 * D - 208 * E                              */
+/* tmp_b = 516 * D                                         */
+/* tmp_c = 298 * C                                         */
+/*                                                         */
+/* R = clip(( tmp_c + tmp_r ) >> 8)                        */
+/* G = clip(( tmp_c + tmp_g ) >> 8)                        */
+/* B = clip(( tmp_c + tmp_b ) >> 8)                        */
+/* ======================================================= */
+
+void
+yuv2rgb(uint8_t y, uint8_t u, uint8_t v, uint8_t *rgb){
+
+    int32_t y_tmp = (int32_t)y - 16;
+    int32_t u_tmp = (int32_t)u - 128;
+    int32_t v_tmp = (int32_t)v - 128;
+
+    int32_t r_tmp = 0;
+    int32_t g_tmp = 0;
+    int32_t b_tmp = 0;
+
+    uint8_t r_val = 0;
+    uint8_t g_val = 0;
+    uint8_t b_val = 0;
+        
+    y_tmp *= 298;
+    
+    r_tmp = y_tmp +            0 +    v_tmp*409 + 128;
+    g_tmp = y_tmp + u_tmp*(-100) + v_tmp*(-208) + 128;
+    b_tmp = y_tmp + u_tmp*516    +            0 + 128;
+
+    r_tmp >>= 8;
+    g_tmp >>= 8;
+    b_tmp >>= 8;
+
+    r_val = ( (r_tmp < (1<<8)) ? ((r_tmp >= 0)?r_tmp:0) : 0xFF);
+    g_val = ( (g_tmp < (1<<8)) ? ((g_tmp >= 0)?g_tmp:0) : 0xFF);
+    b_val = ( (b_tmp < (1<<8)) ? ((b_tmp >= 0)?b_tmp:0) : 0xFF);
+    
+    rgb[0] = (uint8_t)r_val;
+    rgb[1] = (uint8_t)g_val;
+    rgb[2] = (uint8_t)b_val;
+        
+    return;
+}
+
+void
+sl_fb_device::convert_frame_yvyu(void){
+
+    return;
+}
+
+void
+sl_fb_device::convert_frame_yv16(void){
+
+    int      i = 0, j = 0;
+    uint8_t  y, u, v;
+    uint8_t *y_buf = yuv_image[buf_idx];
+    uint8_t *u_buf = y_buf + (width*height);
+    uint8_t *v_buf = u_buf + (width*height)/2;
+
+    uint8_t *rgb   = rgb_image[buf_idx];
+
+    for(i = 0; i < (width*height/2); i++){
+        
+        y = y_buf[i*2];
+        u = u_buf[i];
+        v = v_buf[i];
+        
+        yuv2rgb(y, u, v, rgb);
+        rgb += 3;
+
+        y = y_buf[i*2 + 1];
+
+        yuv2rgb(y, u, v, rgb);
+        rgb += 3;
+
+    }
+
+    return;
+}
+
+void
+sl_fb_device::convert_frame_yv12(void){
+
+    
+
+    return;
+}
+
+
+void sl_fb_device::rcv_rqst (unsigned long ofs, unsigned char be,
                               unsigned char *data, bool bWrite)
 {
 

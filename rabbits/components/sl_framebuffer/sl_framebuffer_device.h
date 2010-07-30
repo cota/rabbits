@@ -17,16 +17,24 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RAMDAC_DEVICE_H_
-#define _RAMDAC_DEVICE_H_
+#ifndef _SL_FB_DEVICE_H_
+#define _SL_FB_DEVICE_H_
 
 #include <slave_device.h>
 
-class ramdac_device : public slave_device
+enum fb_mode{
+    GREY   = 0,
+    RGB32  = 1,
+    YVYU   = 2, /* Packed YUV 4:2:2 */
+    YV12   = 3, /* Planar YUV 4:2:0 */
+    YV16   = 4, /* Planar YUV 4:2:2 */
+};
+
+class sl_fb_device : public slave_device
 {
 public:
-    ramdac_device (const char *_name);
-    virtual ~ramdac_device ();
+    sl_fb_device (const char *_name, int fb_w, int fb_h, int fb_mode);
+    virtual ~sl_fb_device ();
 
 public:
     /*
@@ -41,24 +49,42 @@ private:
     void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
     void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
 
-    void display ();
-    void viewer ();
+    void display(void);
+    void init_ramdac(void);
     void receive_size (unsigned int data);
 
+    void convert_frame_yvyu(void);
+    void convert_frame_yv16(void);
+    void convert_frame_yv12(void);
+
 private:
-    int             pout;
-    int             pid;
+    int             pout;  /* pipe to Xramdac        */
+    int             pid;   /* Xramdac PID            */
 
-    unsigned int    m_x;
-    unsigned int    m_y;
-    int             width, height, components;
-    int             w, h;
-    int             ii;
-    bool            m_ready;
+    int             mode;  /* current mode of the FB */
 
-    char            *image[2];
+    int             width;
+    int             height;
+
+    /* YUV part ... processed */
+    int             yuv_size;
+    uint8_t        *yuv_image[2];  /* local buffer for YUV2RGB conversion */
+
+    /* RGB Part ... displayed */
+    int             rgb_components;
+    int             rgb_size;
+    uint8_t        *rgb_image[2];  /* shared memory with the viewer       */
+
+    /* int             w, h; */
+
+    int             buf_idx;       /* Double buffering index */
+    uint8_t       **write_buf;     /* addresses of the memory area */
+    int             mem_size;      /* size of this area(s) */
+
+
     int             shmid[2];
-    int             nb_images;
+
+
 };
 
 #endif
