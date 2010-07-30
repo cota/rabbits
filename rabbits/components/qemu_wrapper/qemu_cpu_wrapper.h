@@ -67,9 +67,6 @@ private:
     void cpu_thread ();
 
     void rcv_rsp(unsigned char tid, unsigned char *data, bool bErr, bool bWrite);
-    /* void send_req(unsigned char tid, unsigned long addr, unsigned char *data, */
-    /* 			  unsigned char bytes, bool bWrite); */
-    void receiveThread ();
 
 private:
     //local functions
