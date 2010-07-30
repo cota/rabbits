@@ -32,6 +32,17 @@
 #include <stdlib.h> 
 #include "pthread.h"
 
+#ifdef DEBUG_RAMDAC
+#define DPRINTF(fmt, args...)                               \
+    do { fprintf(stdout, "xramdac: " fmt , ##args); } while (0)
+#else
+#define DPRINTF(fmt, args...) do {} while(0)
+#endif
+
+#define EPRINTF(fmt, args...)                               \
+    do { fprintf(stderr, "xramdac: " fmt , ##args); } while (0)
+
+
 gboolean display_drawing_area (GtkWidget *widget,
                                GdkEventExpose *event,
                                gpointer user_data);
@@ -44,10 +55,19 @@ static unsigned int			width;
 static unsigned int			height;
 static unsigned int		    components;
 static unsigned int			wi;
-static unsigned int			shmid;
+static unsigned int			shmid[2];
 static unsigned char		*copy;
 
 static unsigned long        dummy;
+
+void
+clean_shm(void){
+    int i = 0;
+    DPRINTF("XRAMDAC exited\n");
+    for(i = 0; i < 2; i++){
+        shmdt(image[i]);
+    }
+}
 
 int
 main (int argc, char *argv[])
@@ -56,7 +76,16 @@ main (int argc, char *argv[])
     char					xname[80] = "*** The screen ***";
     unsigned int			i;
 
-    gtk_init (&argc, &argv);
+
+    DPRINTF("xramdac launched\n");
+    atexit(clean_shm);
+
+    if( gtk_init_check (&argc, &argv) != TRUE ){
+        EPRINTF("XRAMDAC gtk cannot be initialized\n");
+        exit(EXIT_FAILURE);
+    };
+
+    DPRINTF("reading config\n");
 
     dummy = read(0, key, sizeof(key));
     dummy = read(0, &width, sizeof(unsigned int));
@@ -66,12 +95,15 @@ main (int argc, char *argv[])
 
     for( i = 0 ; i < 2 ; i++ )
     {
-        if ((shmid = shmget(key[i], components * width * height * sizeof(char), 0)) == -1)
+        DPRINTF("getting shm %x\n", key[i]);
+        DPRINTF("%d, %d\n", width, height);
+        DPRINTF("size: %d\n", components * width * height * sizeof(char));
+        if ((shmid[i] = shmget(key[i], components * width * height * sizeof(char), 0400)) == -1)
         {
             perror("ERROR: Ramdac.shmget");
             exit(1);
         }
-        if ( (image[i] = (unsigned char*)shmat(shmid, 0, 00400)) == (void *)-1) 
+        if ( (image[i] = (unsigned char*)shmat(shmid[i], 0, 00400)) == (void *)-1) 
         {
             perror("ERROR: Ramdac.shmat");
             exit(1);
@@ -98,7 +130,7 @@ main (int argc, char *argv[])
 
     wi = 0;
 
-    signal(SIGUSR1,display);
+    signal(SIGUSR1, display);
 
     gtk_main ();
     return 0;
@@ -106,9 +138,11 @@ main (int argc, char *argv[])
 
 void display()
 {
-    memcpy(copy,image[wi],components * width * height * sizeof(char));
-    display_drawing_area(darea,NULL,NULL);
+    DPRINTF("Xramdac: displaying area\n");
+    memcpy(copy,image[wi], components * width * height * sizeof(char));
+    display_drawing_area(darea, NULL, NULL);
     wi = (wi + 1) % 2;
+    DPRINTF("Xramdac: end of display\n");
     return;
 }
 
