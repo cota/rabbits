@@ -167,7 +167,7 @@ void ramdac_device::viewer ()
     }
     if (pid == -1)
     {
-        perror("viwer: fork failed");
+        perror("viewer: fork failed");
         exit(1);
     }
 
