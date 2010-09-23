@@ -292,15 +292,12 @@ void tty_serial_device::rcv_rqst (unsigned long ofs, unsigned char be,
 
     bool bErr = false;
 
-    if(bWrite){
+    if (bWrite)
         this->write(ofs, be, data, bErr);
-    }else{
+    else
         this->read(ofs, be, data, bErr);
-    }
 
-    send_rsp(bErr);
-
-    return;
+    send_rsp (bErr);
 }
 
 /*

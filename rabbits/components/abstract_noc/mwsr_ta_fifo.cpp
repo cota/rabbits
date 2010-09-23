@@ -38,7 +38,7 @@ mwsr_ta_fifo<ITEM>::~mwsr_ta_fifo ()
 template <typename ITEM>
 ITEM& mwsr_ta_fifo<ITEM>::Read ()
 {
-    if (IsEmpty ())
+    while (IsEmpty ())
     {
         wait(canRead);
     }

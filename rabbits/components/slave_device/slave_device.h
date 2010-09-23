@@ -47,8 +47,9 @@ public:
     sc_port<VCI_GET_REQ_IF>                             get_port;
     sc_port<VCI_PUT_RSP_IF>                             put_port;
 
-    vci_response                                        rsp;
-    bool                                                bProcessing_rq;
+    vci_response                                        m_rsp;
+    vci_request                                         m_req;
+    bool                                                m_bProcessing_rq;
     bool                                                m_write_invalidate;
 
 };

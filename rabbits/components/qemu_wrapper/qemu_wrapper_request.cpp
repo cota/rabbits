@@ -58,13 +58,13 @@ qemu_wrapper_requests::~qemu_wrapper_requests ()
 
 void qemu_wrapper_requests::WaitWBEmpty ()
 {
-    if (m_headBusy)
+    while (m_headBusy)
         wait (m_evEmpty);
 }
 
 qemu_wrapper_request* qemu_wrapper_requests::GetNewRequest (int bWaitEmpty)
 {
-    if (bWaitEmpty && m_headBusy)
+    while (bWaitEmpty && m_headBusy)
         wait (m_evEmpty);
 
     qemu_wrapper_request	*p = m_headFree;

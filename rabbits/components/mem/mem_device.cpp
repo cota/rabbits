@@ -164,18 +164,14 @@ void mem_device::read (unsigned long ofs, unsigned char be, unsigned char *data,
 void mem_device::rcv_rqst (unsigned long ofs, unsigned char be,
                            unsigned char *data, bool bWrite)
 {
-
     bool bErr = false;
 
-    if(bWrite){
-        this->write(ofs, be, data, bErr);
-    }else{
-        this->read(ofs, be, data, bErr);
-    }
+    if (bWrite)
+        this->write (ofs, be, data, bErr);
+    else
+        this->read (ofs, be, data, bErr);
 
-    send_rsp(bErr);
-
-    return;
+    send_rsp (bErr);
 }
 
 /*

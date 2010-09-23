@@ -582,7 +582,7 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
 
     send_req(tid, addr, adata, nbytes, 0);
 
-    if (!localrq->bDone)
+    while (!localrq->bDone)
         wait (localrq->evDone);
 
     *((unsigned long *) adata + 0) = localrq->low_word;
@@ -619,7 +619,7 @@ void qemu_cpu_wrapper::write (unsigned long addr,
 
     if (!m_unblocking_write)
     {
-        if (!localrq->bDone)
+        while (!localrq->bDone)
             wait (localrq->evDone);
         m_rqs->FreeRequest (localrq);
     }

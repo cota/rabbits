@@ -24,6 +24,7 @@ void invalidate_address (unsigned long addr, unsigned int node_id);
 slave_device::slave_device (sc_module_name module_name) : sc_module (module_name)
 {
     m_write_invalidate = false;
+    m_bProcessing_rq = false;
     SC_THREAD (request_thread);
 }
 
@@ -35,59 +36,53 @@ void slave_device::request_thread ()
 {
     unsigned char           be, cmd;
     unsigned long           addr;
-    vci_request             req;
 
     while (1)
     {
-        get_port->get (req);
+        get_port->get (m_req);
 
-        if(bProcessing_rq)
+        if(m_bProcessing_rq)
         {
             fprintf(stdout, "Recieved a request while processing previous one: drop it\n");
             continue;
         }
 
-        bProcessing_rq = true;
+        m_bProcessing_rq = true;
 
-        addr   = req.address;
-        be     = req.be;
-        cmd    = req.cmd;
+        addr   = m_req.address;
+        be     = m_req.be;
+        cmd    = m_req.cmd;
 
-        rsp.rsrcid   = req.srcid;
-        rsp.rtrdid   = req.trdid;
-        rsp.reop     = 1;
-        rsp.rbe      = be;
+        m_rsp.rsrcid   = m_req.srcid;
+        m_rsp.rtrdid   = m_req.trdid;
+        m_rsp.reop     = 1;
+        m_rsp.rbe      = be;
 
-        switch(cmd){
+        switch (cmd)
+        {
         case CMD_WRITE:
-            this->rcv_rqst (addr, be, req.wdata, 1);
-            if (m_write_invalidate)
-                invalidate_address (req.initial_address, req.srcid);
+            this->rcv_rqst (addr, be, m_req.wdata, true);
             break;
         case CMD_READ:
-            this->rcv_rqst (addr, be, rsp.rdata, 0);
+            this->rcv_rqst (addr, be, m_rsp.rdata, false);
             break;
         default:
             cerr << "Unknown command" << endl;
-        }
-
+        } //switch (cmd)
     } // while(1)
-
-    // Point Never Reached...
-    return;
 }
 
 
 void
-slave_device::send_rsp(bool bErr)
+slave_device::send_rsp (bool bErr)
 {
-    rsp.rerror = bErr;
+    if (m_write_invalidate && m_req.cmd == CMD_WRITE)
+        invalidate_address (m_req.initial_address, m_req.srcid);
 
-    put_port->put (rsp);
+    m_rsp.rerror = bErr;
+    put_port->put (m_rsp);
 
-    bProcessing_rq = false;
-
-    return;
+    m_bProcessing_rq = false;
 }
 
 /*
