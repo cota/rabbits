@@ -57,6 +57,7 @@ extern "C"
     extern void systemc_qemu_wakeup (qemu_cpu_wrapper_t *_this);
     extern void systemc_qemu_consume_instruction_cycles (
         qemu_cpu_wrapper_t *_this, int ninstr);
+    extern void systemc_qemu_consume_ns (unsigned long ns);
     extern unsigned long systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, 
         unsigned long address, unsigned char nbytes, int bIO);
     extern void systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, 
@@ -113,6 +114,8 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     sc_exp_fcs.systemc_qemu_wakeup = (systemc_qemu_wakeup_fc_t) systemc_qemu_wakeup;
     sc_exp_fcs.systemc_qemu_consume_instruction_cycles = 
         (systemc_qemu_consume_instruction_cycles_fc_t) systemc_qemu_consume_instruction_cycles;
+    sc_exp_fcs.systemc_qemu_consume_ns =
+        (systemc_qemu_consume_ns_fc_t) systemc_qemu_consume_ns;
     sc_exp_fcs.systemc_qemu_read_memory = (systemc_qemu_read_memory_fc_t) systemc_qemu_read_memory;
     sc_exp_fcs.systemc_qemu_write_memory = (systemc_qemu_write_memory_fc_t) systemc_qemu_write_memory;
     sc_exp_fcs.systemc_qemu_get_time = (systemc_qemu_get_time_fc_t) systemc_qemu_get_time;

@@ -655,6 +655,12 @@ extern "C"
             no_cycles_cpu0 += ninstr;
     }
 
+    void
+    systemc_qemu_consume_ns (unsigned long ns)
+    {
+        wait (ns, SC_NS);
+    }
+
     unsigned long
     systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
                               unsigned char nbytes, int bIO)
