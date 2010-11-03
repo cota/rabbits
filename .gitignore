@@ -3,6 +3,7 @@ soft_env
 .stamps
 *.save
 cscope.*
+ncscope.*
 
 platforms/roger/logCPUs
 platforms/roger/objs/
