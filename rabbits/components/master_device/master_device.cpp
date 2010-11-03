@@ -75,11 +75,22 @@ void master_device::response_thread ()
             cout << "[Error in " << name () <<  endl << resp << "]" << endl;
 
         be = resp.rbe;
-        while(!(be & 0x1)){
-            ofs++; be >>= 1;
-        }
-        while(be & 0x1){
-            nbytes++; be >>= 1;
+
+        if (be)
+        {
+            while (!(be & 0x1)){
+                ofs++;
+                be >>= 1;
+            }
+
+            while (be & 0x1){
+                nbytes++;
+                be >>= 1;
+            }
+
+            for (i = 0; i < nbytes; i++){
+                data[i] = resp.rdata[i + ofs];
+            }
         }
 
         for (i = 0; i < nbytes; i++){
@@ -121,18 +132,7 @@ void master_device::send_req(unsigned char tid, unsigned long addr,
             req.wdata[i + ofs] = data[i];
     }
 
-    //COUT_TIMES << sc_time_stamp ().value () << " READ Before - "
-    //			<< name () << endl;
-
     put_port->put (req);
-
-    //COUT_TIMES << sc_time_stamp ().value () << " READ After - "
-    //			<< name () << endl;
-
-
-
-
-
     return;
 }
 

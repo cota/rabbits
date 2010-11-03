@@ -62,7 +62,6 @@ typedef struct
 
 const cmdline_option cmdline_options[] = 
 {
-    {"L",       HAS_ARG, CMDLINE_OPTION_loops},
     {"ncpu",    HAS_ARG, CMDLINE_OPTION_ncpu},
     {"M",       HAS_ARG, CMDLINE_OPTION_cpu_family},
     {"cpu",     HAS_ARG, CMDLINE_OPTION_cpu},
@@ -120,9 +119,6 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
 
         switch (popt->index)
         {
-        case CMDLINE_OPTION_loops:
-            no_frames_to_simulate = atoi (optarg);
-            break;
         case CMDLINE_OPTION_ncpu:
             is->no_cpus = atoi (optarg);
             break;

@@ -36,6 +36,8 @@
 #include <sl_timer_device.h>
 #include <sl_tty_device.h>
 #include <sl_mailbox_device.h>
+#include <sl_framebuffer_device.h>
+#include <sl_block_device.h>
 #include <aicu_device.h>
 #include <mem_device.h>
 #include <qemu_imported.h>
@@ -45,8 +47,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-unsigned long no_frames_to_simulate = 0;
 
 mem_device          *ram = NULL;
 interconnect        *onoc = NULL;
@@ -63,7 +63,7 @@ int sc_main (int argc, char ** argv)
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 2;
+    is.no_cpus = 1;
     is.ramsize = 128 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
@@ -72,18 +72,26 @@ int sc_main (int argc, char ** argv)
 
     int n_mb  = is.no_cpus;
 
+#define FB_WIDTH 256
+#define FB_HEIGHT 144
+
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
+    sl_block_device   *bl   = new sl_block_device("block", is.no_cpus,
+                                                  "ice_age_256x144_411.mjpeg", 1024);
+    sl_fb_device      *fb   = new sl_fb_device("fb", FB_WIDTH, FB_HEIGHT, YV16); 
     sl_tty_device     *tty0 = new sl_tty_device ("tty0", 1);
     sl_tty_device     *tty1 = new sl_tty_device ("tty1", 1);
     sl_mailbox_device *mb   = new sl_mailbox_device("mb", n_mb); 
-    aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 0, 2);
+    aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 1, 2);
 
     slaves[nslaves++] = ram;        // 0
     slaves[nslaves++] = tty0;       // 1
     slaves[nslaves++] = tty1;       // 2
     slaves[nslaves++] = mb;         // 3
     slaves[nslaves++] = icu;        // 4
+    slaves[nslaves++] = fb;         // 5
+    slaves[nslaves++] = bl->get_slave();   // 6
 
     sl_timer_device    *timers [is.no_cpus];
     for (i = 0; i < is.no_cpus; i++)
@@ -91,12 +99,11 @@ int sc_main (int argc, char ** argv)
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new sl_timer_device (buf);
-        slaves[nslaves++] = timers[i]; // 5 + i
+        slaves[nslaves++] = timers[i]; // 7 + i
     };
 
     // Connecting Qemu to AICU (IRQ wires);
     int              *int_cpu_mask = new int [is.no_cpus];
-    //int int_cpu_mask[] = {1, 2};
     sc_signal<bool>  *wires_irq_qemu = new sc_signal<bool>[is.no_cpus];
 
     for(i = 0; i < is.no_cpus; i++){
@@ -105,25 +112,30 @@ int sc_main (int argc, char ** argv)
     }
 
     // Connecting AICU irq wires to peripherals
-    sc_signal<bool>  *aicu_irq = new sc_signal<bool> [4*is.no_cpus];
+    sc_signal<bool>  *aicu_irq = new sc_signal<bool> [2*is.no_cpus + 1];
     int aicu_irq_ind = 0;
 
     for (i = 0; i < is.no_cpus; i++){
-        //fprintf(stderr, "MB%d on AICU_in%d\n", i, aicu_irq_ind);
+        fprintf(stderr, "MB%d on AICU_in%d\n", i, aicu_irq_ind);
         mb->irq[i] (aicu_irq[aicu_irq_ind]);
         icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
         aicu_irq_ind++;
     }
 
     for (i = 0; i < is.no_cpus; i++){
-        //fprintf(stderr, "Timer%d on AICU_in%d\n", i, aicu_irq_ind);
+        fprintf(stderr, "Timer%d on AICU_in%d\n", i, aicu_irq_ind);
         timers[i]->irq (aicu_irq[aicu_irq_ind]);
         icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
         aicu_irq_ind++;
     }
 
+    fprintf(stderr, "BlockDevice on AICU_in%d\n", aicu_irq_ind);
+    bl->irq (aicu_irq[aicu_irq_ind]);
+    icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
+    aicu_irq_ind++;
+
     //interconnect
-    onoc = new interconnect ("interconnect", is.no_cpus, nslaves);
+    onoc = new interconnect ("interconnect", is.no_cpus+1, nslaves);
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
 
@@ -145,6 +157,10 @@ int sc_main (int argc, char ** argv)
         //qemu1.set_unblocking_write (0);
     }
 
+
+    onoc->connect_master_64(is.no_cpus, 
+                            bl->get_master()->put_port,
+                            bl->get_master()->get_port);
 
     qemu1.get_cpu(0)->systemc_qemu_write_memory (QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
                                                  0xFFFF /* 16 processors */, 4, 0);

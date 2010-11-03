@@ -8,7 +8,8 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc $(COMPONENTS)/mem    			 \
 			   $(COMPONENTS)/master_device $(COMPONENTS)/slave_device    \
 			   $(COMPONENTS)/qemu_wrapper $(COMPONENTS)/sl_tty           \
 			   $(COMPONENTS)/sl_timer $(COMPONENTS)/sl_mailbox           \
-			   $(COMPONENTS)/aicu                                        \
+			   $(COMPONENTS)/aicu $(COMPONENTS)/sl_framebuffer           \
+			   $(COMPONENTS)/sl_blockdevice   				             \
                $(PLATFORMS)/thumper
 
 
@@ -60,6 +61,11 @@ $(BUILD_DIR)/%.o:$(SRC_BASE_DIR)/%.cpp
 	@$(CC) $(CFLAGS) $(INCDIR) -o $@ -c $< -fvisibility=hidden 
 	@echo -n "$(dir $@)" > $(addsuffix .d, $(basename $@))
 	@$(CC) $(CFLAGS) $(INCDIR) -M $< >> $(addsuffix .d, $(basename $@))
+
+link: clean_exe all
+
+clean_exe:
+	@rm -f $(EXE)
 
 clean:
 	@echo Cleaning ...

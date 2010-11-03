@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <aicu_device.h>
 
-//#define DEBUG_DEVICE_AICU
+/* #define DEBUG_DEVICE_AICU */
 
 #ifdef DEBUG_DEVICE_AICU
 #define DPRINTF(fmt, args...)                               \
@@ -325,8 +325,10 @@ void aicu_device::irq_update_thread ()
                 if(j < L){
                     ind_in = O*j + i;
                 }else{
-                    ind_in = (O - 1)*L + i;
+                    ind_in = O*L + (j - L);
                 }
+
+                DPRINTF("For output %d looking input %d\n", i, ind_in);
 
                 if(irq_in[ind_in].posedge()){
                     m_stat[i] |= (1 << j);
