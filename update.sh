@@ -55,6 +55,8 @@ install_error(){
 
 }
 
+# Main
+
 if [ -e ./rabbits_env ]; then
 	source ./rabbits_env
 else
@@ -63,9 +65,7 @@ else
 fi
 
 rabbits_update || install_error
-
-qemu_update || install_error
-
-tools_update || install_error
+qemu_update    || install_error
+tools_update   || install_error
 
 print_step "Done"
