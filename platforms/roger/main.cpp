@@ -33,8 +33,8 @@
 #include <qemu_cpu_wrapper.h>
 #include <qemu_wrapper_cts.h>
 #include <interconnect.h>
-#include <ramdac_device.h>
 #include <tg_device.h>
+#include <framebuffer_device.h>
 #include <timer_device.h>
 #include <tty_serial_device.h>
 #include <sem_device.h>
@@ -70,36 +70,47 @@ int sc_main (int argc, char ** argv)
     if (check_init (&is) != 0)
         return 1;
 
+    fb_reset_t fb_res_stat = {
+        /* .fb_start =           */    0,
+        /* .fb_w =               */    0,
+        /* .fb_h =               */    0,
+        /* .fb_mode =            */ NONE,
+        /* .fb_display_on_warp = */    0,
+    };
+
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
-    tg_device           *tg = new tg_device ("tg", "videoin.jpg");
-    ramdac_device       *ramdac = new ramdac_device ("ramdac");
-    tty_serial_device   *tty = new tty_serial_device ("tty");
-    sem_device          *sem = new sem_device ("sem", 0x100000);
-    slaves[nslaves++] = ram;        // 0
-    slaves[nslaves++] = tg;         // 1
-    slaves[nslaves++] = ramdac;     // 2
-    slaves[nslaves++] = tty;        // 3
-    slaves[nslaves++] = sem;        // 4
+    tg_device         *tg = new tg_device ("tg", "videoin.jpg");
+    tty_serial_device *tty = new tty_serial_device ("tty");
+    sem_device        *sem = new sem_device ("sem", 0x100000);
+    fb_device         *fb   = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
+    timer_device      *timers[1];
+    int                ntimers = sizeof (timers) / sizeof (timer_device *);
 
-    timer_device        *timers[1];
-    int              ntimers = sizeof (timers) / sizeof (timer_device *);
-    for (i = 0; i < ntimers; i++)
-    {
+    slaves[nslaves++] = ram;             // 0
+    slaves[nslaves++] = tg;              // 1
+    slaves[nslaves++] = fb->get_slave(); // 2
+    slaves[nslaves++] = tty;             // 3
+    slaves[nslaves++] = sem;             // 4
+    for (i = 0; i < ntimers; i++){
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new timer_device (buf);
-        slaves[nslaves++] = timers[i]; //5 + i
-    };
-    int                         no_irqs = ntimers + 1;
+        slaves[nslaves++] = timers[i];   // 6 + i
+    }
+
+    int                         no_irqs = ntimers + 2;
     int                         int_cpu_mask [] = {1, 1, 0, 0, 0, 0};
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
-        timers[i]->irq (wires_irq_qemu[i]);
-    tty->irq_line (wires_irq_qemu[no_irqs - 1]);
+        timers[i]->irq(wires_irq_qemu[i]);
+    tty->irq_line(wires_irq_qemu[ntimers]);
+    fb->irq(wires_irq_qemu[ntimers + 1]);
 
     //interconnect
-    onoc = new interconnect ("interconnect", is.no_cpus, nslaves);
+    onoc = new interconnect ("interconnect",
+                             is.no_cpus + 1,  /* masters: CPUs + FB */
+                             nslaves);        /* slaves:  ...       */
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
 
@@ -120,6 +131,10 @@ int sc_main (int argc, char ** argv)
         qemu1.m_qemu_import.gdb_srv_start_and_wait (is.gdb_port);
         //qemu1.set_unblocking_write (0);
     }
+
+    onoc->connect_master_64(is.no_cpus, 
+                            fb->get_master()->put_port,
+                            fb->get_master()->get_port);
 
     sc_start ();
 

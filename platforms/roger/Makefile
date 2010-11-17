@@ -7,10 +7,10 @@ SRC_BASE_DIR = $(HW)
 SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/mem                \
                $(COMPONENTS)/qemu_wrapper       \
-               $(COMPONENTS)/ramdac             \
                $(COMPONENTS)/sem                \
                $(COMPONENTS)/slave_device       \
                $(COMPONENTS)/master_device      \
+               $(COMPONENTS)/framebuffer        \
                $(COMPONENTS)/tg                 \
                $(COMPONENTS)/timer              \
                $(COMPONENTS)/tty_serial         \
