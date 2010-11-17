@@ -36,7 +36,7 @@
 #include <sl_timer_device.h>
 #include <sl_tty_device.h>
 #include <sl_mailbox_device.h>
-#include <sl_framebuffer_device.h>
+#include <framebuffer_device.h>
 #include <sl_block_device.h>
 #include <aicu_device.h>
 #include <mem_device.h>
@@ -72,26 +72,31 @@ int sc_main (int argc, char ** argv)
 
     int n_mb  = is.no_cpus;
 
-#define FB_WIDTH 256
-#define FB_HEIGHT 144
+    fb_reset_t fb_res_stat = {
+        /* .fb_start =           */    1,
+        /* .fb_w =               */  256,
+        /* .fb_h =               */  144,
+        /* .fb_mode =            */ YV16,
+        /* .fb_display_on_warp = */    1,
+    };
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
     sl_block_device   *bl   = new sl_block_device("block", is.no_cpus,
                                                   "ice_age_256x144_411.mjpeg", 1024);
-    sl_fb_device      *fb   = new sl_fb_device("fb", FB_WIDTH, FB_HEIGHT, YV16); 
+    fb_device         *fb   = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
     sl_tty_device     *tty0 = new sl_tty_device ("tty0", 1);
     sl_tty_device     *tty1 = new sl_tty_device ("tty1", 1);
     sl_mailbox_device *mb   = new sl_mailbox_device("mb", n_mb); 
-    aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 1, 2);
+    aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 2, 2);
 
-    slaves[nslaves++] = ram;        // 0
-    slaves[nslaves++] = tty0;       // 1
-    slaves[nslaves++] = tty1;       // 2
-    slaves[nslaves++] = mb;         // 3
-    slaves[nslaves++] = icu;        // 4
-    slaves[nslaves++] = fb;         // 5
-    slaves[nslaves++] = bl->get_slave();   // 6
+    slaves[nslaves++] = ram;             // 0
+    slaves[nslaves++] = tty0;            // 1
+    slaves[nslaves++] = tty1;            // 2
+    slaves[nslaves++] = mb;              // 3
+    slaves[nslaves++] = icu;             // 4
+    slaves[nslaves++] = fb->get_slave(); // 5
+    slaves[nslaves++] = bl->get_slave(); // 6
 
     sl_timer_device    *timers [is.no_cpus];
     for (i = 0; i < is.no_cpus; i++)
@@ -112,7 +117,7 @@ int sc_main (int argc, char ** argv)
     }
 
     // Connecting AICU irq wires to peripherals
-    sc_signal<bool>  *aicu_irq = new sc_signal<bool> [2*is.no_cpus + 1];
+    sc_signal<bool>  *aicu_irq = new sc_signal<bool> [2*is.no_cpus + 2];
     int aicu_irq_ind = 0;
 
     for (i = 0; i < is.no_cpus; i++){
@@ -134,8 +139,13 @@ int sc_main (int argc, char ** argv)
     icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
     aicu_irq_ind++;
 
+    fprintf(stderr, "FrameBuffer on AICU_in%d\n", aicu_irq_ind);
+    fb->irq (aicu_irq[aicu_irq_ind]);
+    icu->irq_in[aicu_irq_ind](aicu_irq[aicu_irq_ind]);
+    aicu_irq_ind++;
+
     //interconnect
-    onoc = new interconnect ("interconnect", is.no_cpus+1, nslaves);
+    onoc = new interconnect ("interconnect", is.no_cpus+2, nslaves);
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
 
@@ -161,6 +171,9 @@ int sc_main (int argc, char ** argv)
     onoc->connect_master_64(is.no_cpus, 
                             bl->get_master()->put_port,
                             bl->get_master()->get_port);
+    onoc->connect_master_64(is.no_cpus+1, 
+                            fb->get_master()->put_port,
+                            fb->get_master()->get_port);
 
     qemu1.get_cpu(0)->systemc_qemu_write_memory (QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
                                                  0xFFFF /* 16 processors */, 4, 0);
