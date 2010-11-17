@@ -68,6 +68,7 @@ enum fb_status {
 };
 
 typedef struct fb_regs fb_regs_t;
+typedef struct fb_reset fb_reset_t;
 typedef struct fb_io_resource fb_io_resource_t;
 
 struct fb_io_resource {
@@ -78,6 +79,9 @@ struct fb_io_resource {
     int         mem_idx;
 };
 
+/*
+ * internal registers status
+ */
 struct fb_regs {
 
     /* Registers */
@@ -92,6 +96,19 @@ struct fb_regs {
     uint32_t m_status;
     uint32_t m_dmaen;
     uint32_t m_irq;
+    uint32_t m_disp_wrap;
+};
+
+/*
+ * reset status : provided at build time.
+ */
+struct fb_reset {
+
+    uint32_t fb_start;
+    uint16_t fb_w;
+    uint16_t fb_h;
+    uint32_t fb_mode;
+    uint32_t fb_display_on_wrap; 
 };
 
 #define FB_CTRL_START   (1 << 0)
@@ -179,8 +196,7 @@ class fb_device : public sc_module
 {
 public:
     SC_HAS_PROCESS(fb_device);
-    fb_device (sc_module_name _name, uint32_t master_id, uint16_t width,
-               uint16_t height, int mode);
+    fb_device (sc_module_name _name, uint32_t master_id, fb_reset_t *reset_status);
     virtual ~fb_device ();
 
 public:

@@ -167,10 +167,11 @@ fb_device::init_viewer()
     ::write (m_pout, &m_height, sizeof (int));
     ::write (m_pout, &m_rgb_components, sizeof (unsigned int));
     ::write (m_pout, xname, sizeof (xname));
+
+    sleep(1);
 }
 
-fb_device::fb_device (sc_module_name _name, uint32_t master_id, uint16_t fb_w,
-                      uint16_t fb_h, int fb_mode)
+fb_device::fb_device (sc_module_name _name, uint32_t master_id, fb_reset_t *reset_status)
 :sc_module(_name)
 {
 
@@ -184,15 +185,23 @@ fb_device::fb_device (sc_module_name _name, uint32_t master_id, uint16_t fb_w,
     m_io_res->mem_idx  = 0;
     
     m_dma_in_use = 0;
-
-    m_regs->m_image_w  = fb_w;
-    m_regs->m_image_h  = fb_h;
-    m_regs->m_buf_addr = 0;
-    m_regs->m_irqstat  = 0;
-    m_regs->m_ctrl     = (1 << 0);
-    m_regs->m_status   = FB_RUNNING;
-    m_regs->m_mode     = fb_mode;
-    m_regs->m_irq      = 0;
+    m_regs->m_buf_addr      = 0;
+    m_regs->m_irqstat       = 0;
+    if(reset_status->fb_start){
+        m_regs->m_image_w   = reset_status->fb_w;
+        m_regs->m_image_h   = reset_status->fb_h;
+        m_regs->m_mode      = reset_status->fb_mode;
+        m_regs->m_ctrl      = (1 << 0);
+        m_regs->m_status    = FB_RUNNING;
+        m_regs->m_disp_wrap = reset_status->fb_display_on_wrap;
+    }else{
+        m_regs->m_image_w   = 0;
+        m_regs->m_image_h   = 0;
+        m_regs->m_mode      = NONE;
+        m_regs->m_ctrl      = 0;
+        m_regs->m_status    = FB_STOPPED;
+    }
+    m_regs->m_irq           = 0;
 
 
     strcpy(buf, _name);
@@ -207,7 +216,8 @@ fb_device::fb_device (sc_module_name _name, uint32_t master_id, uint16_t fb_w,
     buf[strlen(_name)+1] = 'm';
     master = new fb_device_master(buf, master_id);
 
-    init(fb_w, fb_h, fb_mode);
+    if(reset_status->fb_start)
+        init(reset_status->fb_w, reset_status->fb_h, reset_status->fb_mode);
 
     SC_THREAD (irq_update_thread);
     SC_THREAD (display_thread);
@@ -799,12 +809,12 @@ fb_device_slave::write (unsigned long ofs, unsigned char be,
         mem_ofs = lofs - FB_DEVICE_MEM;
         if(mem_ofs < (m_io_res->mem_size>>2)){
 
-#if 0
-            if((mem_ofs == 0) && (be & 0x1)){
+            if( m_io_res->regs->m_disp_wrap     &&
+                ((mem_ofs == 0) && (be & 0x1))  ){
                 /* Each time we write at the zero position we update */
                 display();
             }
-#endif
+
             ptr = (uint32_t *)m_io_res->mem[m_io_res->mem_idx];
             tmp = ptr[mem_ofs];
             mask = s_mask[lbe];
