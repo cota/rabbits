@@ -98,8 +98,28 @@ initrd_install(){
     cd ${HERE}/initrd
     ./make_initramfs.sh || return
 
-
     touch ${STAMPS_DIR}/initrd_installed
+}
+
+drivers_install(){
+
+	print_step "Installing Drivers ..."
+
+	cd ${HERE}/linux/drivers/scripts
+	./install_drivers.sh || return
+
+
+	touch ${STAMPS_DIR}/drivers_installed
+}
+
+apps_install(){
+
+    print_step "Installing Apps ..."
+
+	cd ${HERE}/apps/scripts
+	./install_mjpeg.sh || return
+
+    touch ${STAMPS_DIR}/apps_installed
 }
 
 install_error(){
@@ -131,6 +151,12 @@ sanity_checks || install_error
 
 [ -e ${STAMPS_DIR}/initrd_installed ] || \
     initrd_install || install_error
+
+[ -e ${STAMPS_DIR}/drivers_installed ] || \
+    drivers_install || install_error
+
+[ -e ${STAMPS_DIR}/apps_installed ] || \
+    apps_install || install_error
 
 print_step "Done"
 echo "You will have to source the soft_env file"

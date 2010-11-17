@@ -20,10 +20,7 @@
 
 HERE=`pwd`
 
-MJPEG_DIR=mjpeg
-MJPEG_REP=git://tima-sls.imag.fr/Mjpeg.git
-
-LOG_DIR=${HERE}/../${MJPEG_DIR}/logs
+LOG_DIR=${HERE}/../logs
 
 if [ "x${RABBITS_XTOOLS}" == "x" ]; then 
 	echo "You should install a cross-toolchain"
@@ -32,21 +29,8 @@ if [ "x${RABBITS_XTOOLS}" == "x" ]; then
 fi
 
 cd ..
-
-if [ -d ${MJPEG_DIR}/.git/ ]; then
-    (
-	cd ${MJPEG_DIR}
-	echo "Pulling mjpeg git repo (sls repository) ..."
-	git pull -q ${MJPEG_REP} roger
-    )
-else
-    rm -fr ${MJPEG_DIR}
-    echo "Cloning Mjpeg git repo (sls repository) [can take a while] ..."
-    git clone -q ${MJPEG_REP} -b roger ${MJPEG_DIR}
-fi
-
 mkdir -p ${LOG_DIR}
 
-cd ${MJPEG_DIR}
-echo "Installing Mjpeg ..."
+cd rabbitsfb
+echo "Installing rabbitsfb driver ..."
 ./compile_arm.sh &> ${LOG_DIR}/compile.log || exit

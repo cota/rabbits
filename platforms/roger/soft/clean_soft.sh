@@ -26,3 +26,5 @@ rm -fr busybox/logs
 
 rm -fr linux/linux
 rm -fr linux/logs
+
+rm -fr apps/mjpeg
