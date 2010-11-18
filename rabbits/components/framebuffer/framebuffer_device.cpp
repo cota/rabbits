@@ -29,8 +29,9 @@
 #include <fcntl.h>
 #include <framebuffer_device.h>
 
-
+#if 0
 #define DEBUG_DEVICE_FB
+#endif
 
 #ifdef DEBUG_DEVICE_FB
 #define DPRINTF(fmt, args...)                               \

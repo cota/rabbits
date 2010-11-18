@@ -14,8 +14,10 @@
 #include <linux/pagemap.h>
 #include <linux/page-flags.h>
 
+#if 0
 #define DEBUG
 #define HDEBUG
+#endif
 
 #include "debug.h"
 #include "rabbitsfb_types.h"
