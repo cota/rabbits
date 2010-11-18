@@ -1,3 +1,4 @@
 log*
 run.x
 objs
+tty*
