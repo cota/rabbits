@@ -33,7 +33,7 @@
 #include <qemu_cpu_wrapper.h>
 #include <qemu_wrapper_cts.h>
 #include <interconnect.h>
-#include <tg_device.h>
+#include <sram_device.h>
 #include <framebuffer_device.h>
 #include <timer_device.h>
 #include <tty_serial_device.h>
@@ -80,23 +80,24 @@ int sc_main (int argc, char ** argv)
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
-    tg_device         *tg = new tg_device ("tg", "videoin.jpg");
-    tty_serial_device *tty = new tty_serial_device ("tty");
-    sem_device        *sem = new sem_device ("sem", 0x100000);
-    fb_device         *fb   = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
+    sram_device       *sram  = new sram_device ("sram", 0x800000);
+    tty_serial_device *tty   = new tty_serial_device ("tty");
+    sem_device        *sem   = new sem_device ("sem", 0x100000);
+    fb_device         *fb    = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
 
     slaves[nslaves++] = ram;             // 0
-    slaves[nslaves++] = tg;              // 1
+    slaves[nslaves++] = sram;            // 1
     slaves[nslaves++] = fb->get_slave(); // 2
     slaves[nslaves++] = tty;             // 3
     slaves[nslaves++] = sem;             // 4
+
     for (i = 0; i < ntimers; i++){
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new timer_device (buf);
-        slaves[nslaves++] = timers[i];   // 6 + i
+        slaves[nslaves++] = timers[i];   // 5 + i
     }
 
     int                         no_irqs = ntimers + 2;
