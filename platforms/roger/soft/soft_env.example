@@ -5,7 +5,7 @@ export RABBITS_XTOOLS=
 export RABBITS_CROSS_COMPILE=
 
 # Version of libc and ld (file should be named ld-${RABBITS_LIBC_VERSION}.so)
-export RABBITS_LIBC_VERSION=2.11.1
+export RABBITS_LIBC_VERSION=
 
 if [ -z "${RABBITS_XTOOLS}" ]; then
    echo "You should edit the soft_env file to change the RABBITS_XTOOLS value"
