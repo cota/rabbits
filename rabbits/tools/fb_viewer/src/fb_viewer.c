@@ -29,7 +29,7 @@
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h> 
-
+#include <inttypes.h>
 #include <SDL/SDL.h>
 
 #include "conv.h"
@@ -92,7 +92,7 @@ static SDL_PixelFormat *pix_fmt;
 static uint8_t    *image[2];
 static uint32_t    width;
 static uint32_t    height;
-static uint32_t    size;
+static uint64_t    size;
 static uint32_t    mode;
 static int         shmid[2];
 
@@ -451,7 +451,7 @@ main (int argc, char *argv[])
     size = get_size(width, height, mode);
 
     DPRINTF("%dx%d\n", width, height);
-    DPRINTF("size: %ld\n", size*sizeof(uint8_t));
+    DPRINTF("size: %"PRIu64"\n", size*sizeof(uint8_t));
 
     for( i = 0 ; i < 2 ; i++ ) {
         DPRINTF("getting shm %x\n", key[i]);
@@ -487,16 +487,6 @@ main (int argc, char *argv[])
 
     set_conversion(mode);
 
-    printf("got :\n"
-           "   Amask: 0x%08x\n"
-           "   Rmask: 0x%08x\n"
-           "   Gmask: 0x%08x\n"
-           "   Bmask: 0x%08x\n",
-           info->vfmt->Amask,
-           info->vfmt->Rmask,
-           info->vfmt->Gmask,
-           info->vfmt->Bmask);
-
     surface = SDL_SetVideoMode (width, height, pix_fmt->BitsPerPixel, SDL_SWSURFACE);
     if(!surface){
 		EPRINTF("Video mode set failed: %s\n", SDL_GetError());
@@ -519,7 +509,10 @@ main (int argc, char *argv[])
 
     signal(SIGUSR1, refresh);
 
-    read(0, &test, 1);
+    if(read(0, &test, 1) == 0){
+        EPRINTF("Read error\n");
+        goto SDL_error;
+    }
 
     DPRINTF("Reached end ...\n");
 
