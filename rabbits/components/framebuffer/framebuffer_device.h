@@ -59,7 +59,9 @@ enum fb_mode{
     /* **************************** */
     YV12   = 7, /* Planar YUV 4:2:0 */
     /* **************************** */
-    YV16   = 8, /* Planar YUV 4:2:2 */
+    IYUV   = 8, /* Planar YUV 4:2:0 */
+    /* **************************** */
+    YV16   = 9, /* Planar YUV 4:2:2 */
 };
 
 enum fb_status {
@@ -250,6 +252,10 @@ private:
 
     bool              m_dma_in_use;
 
+    uint8_t          *m_shm_buf[2];
+    int               m_buf_size;
+
+#if 0
     /* YUV part ... processed */
     int               m_yuv_size;
     uint8_t          *m_yuv_image[2];  /* local buffer for YUV2RGB conversion */
@@ -258,7 +264,7 @@ private:
     int               m_rgb_components;
     int               m_rgb_size;
     uint8_t          *m_rgb_image[2];  /* shared memory with the viewer       */
-
+#endif
 };
 
 #endif

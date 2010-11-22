@@ -1,4 +1,4 @@
-SUBDIRS = xterm_rw ramdac chronograph_src
+SUBDIRS = xterm_rw fb_viewer chronograph_src
 FLAGS_TO_PASS = 
 
 all:

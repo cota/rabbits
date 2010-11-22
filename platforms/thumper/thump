@@ -25,8 +25,8 @@ export PATH=$PWD/../../rabbits/tools:$PATH
 
 #./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/Tests/ThreadControl.git/ThreadControl.bin "$@"
 #./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/Tests/BdTest.git/BdTest.bin "$@"
-./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/Tests/FbTest.git/FbTest.bin "$@"
-#./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/ParallelMjpeg/MJPEG.bin "$@"
+#./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/Tests/FbTest.git/FbTest.bin "$@"
+./run.x -cpu arm11mpcore -kernel ~/sandbox/apes_apps/ParallelMjpeg/MJPEG.bin "$@"
 
 #./run.x -cpu arm11mpcore -gdb_port 2244 -kernel ~/sandbox/apes_apps/Tests/ThreadControl.git/ThreadControl.bin "$@"
 #./run.x -cpu arm11mpcore -gdb_port 2244 -kernel ~/sandbox/apes_apps/Tests/BdTest.git/BdTest.bin "$@"

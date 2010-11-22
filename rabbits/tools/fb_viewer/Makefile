@@ -32,6 +32,7 @@ quiet-command = $(if $(VERB),$1,$(if $(2),@echo $2 && $1, @$1))
 .SUFFIXES: .c .o .x
 
 all: $(OBJDIR) $(DEP) $(PROG)
+	$(call quiet-command, cp $(PROG) ../, "INSTALL")
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	$(call quiet-command, $(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<, "  CC     $<")

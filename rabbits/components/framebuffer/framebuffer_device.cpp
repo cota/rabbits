@@ -60,10 +60,10 @@ close_ramdacs()
 
     DPRINTF("close called\n");
 
-    if (nb_fb == 0)
+    if(nb_fb == 0)
         return;
 
-    for (i = 0; i < nb_fb; i++)
+    for(i = 0; i < nb_fb; i++)
     {
         int j = 0;
         for(j = 0; j < 2; j++){
@@ -72,8 +72,8 @@ close_ramdacs()
         }
 
         //cout << "Killing RAMDAC " << (int) i << endl;
-        kill (pids_ramdac[i], SIGKILL);
-        ::waitpid (pids_ramdac[i], &status, 0);
+        kill(pids_ramdac[i], SIGKILL);
+        ::waitpid(pids_ramdac[i], &status, 0);
     }
 
     nb_fb = 0;
@@ -87,11 +87,11 @@ fb_device::close_viewer()
     DPRINTF("close called\n");
 
     for(i = 0; i < 2; i++){
-        shmdt(m_rgb_image[i]);
+        shmdt(m_shm_buf[i]);
         shmctl(m_shmid[i], IPC_RMID, NULL);
     }
-    kill (m_pid, SIGKILL);
-    ::waitpid (m_pid, &status, 0);
+    kill(m_pid, SIGKILL);
+    ::waitpid(m_pid, &status, 0);
 
 }
 
@@ -113,14 +113,12 @@ fb_device::init_viewer()
         close (0);
         dup2 (ppout[0], 0);
 
-        if (execlp ("xramdac", "xramdac", (char *)NULL) == -1)
-        {
+        if(execlp("fbviewer", "fbviewer", (char *)NULL) == -1){
             perror ("viewer: execlp failed");
             _exit (1);
         }
     }
-    if (m_pid == -1)
-    {
+    if(m_pid == -1){
         perror("viewer: fork failed");
         exit(1);
     }
@@ -130,48 +128,38 @@ fb_device::init_viewer()
     pids_ramdac[nb_fb] = m_pid;
     m_pout = ppout[1];
 
-    for (i = 0; i < 2; i++)
-    {
-        for (k = 1;; k++)
-            if ((m_shmid[i] = shmget (k, m_rgb_size * sizeof (uint8_t),
+    for(i = 0; i < 2; i++){
+        for(k = 1;; k++)
+            if((m_shmid[i] = shmget(k, m_buf_size * sizeof (uint8_t),
                                     IPC_CREAT | IPC_EXCL | 0600)) != -1){
                 break;
             }
         DPRINTF("Got shm %x\n", k);
         key[i] = k;
 
-        m_rgb_image[i] = (uint8_t *) shmat (m_shmid[i], 0, 00200);
-        if (m_rgb_image[i] == (void *) -1)
-        {
+        m_shm_buf[i] = (uint8_t *)shmat(m_shmid[i], 0, 00200);
+        if(m_shm_buf[i] == (void *) -1){
             perror ("ERROR: Ramdac.shmat");
             exit (1);
         }
 
         shmids[nb_fb][i]   = m_shmid[i];
-        shm_addr[nb_fb][i] = m_rgb_image[i];
+        shm_addr[nb_fb][i] = m_shm_buf[i];
     }
 
 
     nb_fb++;
-
-#if 0 
-    DPRINTF("Sending :\n"
-            "%d %d\n"
-            "%d x %d x %d\n",
-            key[0], key[1],
-            m_width, m_height, m_rgb_components);
-#endif
    
-    ::write (m_pout, key, sizeof (key));
-    ::write (m_pout, &m_width, sizeof (int));
-    ::write (m_pout, &m_height, sizeof (int));
-    ::write (m_pout, &m_rgb_components, sizeof (unsigned int));
-    ::write (m_pout, xname, sizeof (xname));
+    ::write(m_pout, key, sizeof(key));
+    ::write(m_pout, &m_width, sizeof(uint32_t));
+    ::write(m_pout, &m_height, sizeof(uint32_t));
+    ::write(m_pout, &m_mode, sizeof(uint32_t));
+    ::write(m_pout, xname, sizeof(xname));
 
     sleep(1);
 }
 
-fb_device::fb_device (sc_module_name _name, uint32_t master_id, fb_reset_t *reset_status)
+fb_device::fb_device(sc_module_name _name, uint32_t master_id, fb_reset_t *reset_status)
 :sc_module(_name)
 {
 
@@ -236,17 +224,10 @@ fb_device::uninit(void)
 
     DPRINTF("uninit()\n");
 
-    m_width          = 0;
-    m_height         = 0;
-    m_mode           = NONE;
-    if(m_yuv_size){
-        m_yuv_size       = 0;
-        free(m_yuv_image[0]);
-        free(m_yuv_image[1]);
-    }
-    m_rgb_size       = 0;
-    m_rgb_components = 0;
-
+    m_width     = 0;
+    m_height    = 0;
+    m_mode      = NONE;
+    m_buf_size  = 0;
     close_viewer();
     m_regs->m_status = FB_STOPPED;
 
@@ -258,6 +239,8 @@ char *print_mode(int mode) {
     switch(mode) {
     case NONE:
         return (char *)"NONE";
+    case GREY:
+        return (char *)"GREY";
     case RGB:
         return (char *)"RGB";
     case BGR:
@@ -270,6 +253,8 @@ char *print_mode(int mode) {
         return (char *)"YVYU";
     case YV12:
         return (char *)"YV12";
+    case IYUV:
+        return (char *)"IYUV";
     case YV16:
         return (char *)"YV16";
     default:
@@ -292,78 +277,44 @@ fb_device::init(int width, int height, int mode)
         EPRINTF("Mode not set\n");
         break;
     case GREY:
-        m_rgb_components = 1;
-        m_yuv_size       = 0;
-        m_rgb_size       = height*width;
+        m_buf_size       = height*width;
         break;
+
     case RGB:
     case BGR:
-        m_rgb_components = 3;
-        m_yuv_size       = 0;
-        m_rgb_size       = 3*height*width;
+        m_buf_size       = 3*height*width;
         break;
+
     case ARGB:
     case BGRA:
-        m_rgb_components = 3;
-        m_yuv_size       = 0;
-        m_rgb_size       = 4*height*width;
+        m_buf_size       = 4*height*width;
         break;
+
     case YVYU: /* YUV 4:2:2 */
     case YV16:
-        m_rgb_components = 3;
-        m_yuv_size       = 2*width*height;
-        m_rgb_size       = 3*height*width;
+        m_buf_size       = 3*height*width;
         break;
+
     case YV12: /* YUV 4:2:0 */
-        m_rgb_components = 3;
-        m_yuv_size       = (3*width*height)>>1;
-        m_rgb_size       = 3*height*width;
+    case IYUV: /* YUV 4:2:0 */
+        m_buf_size       = 3*height*width;
         break;
+
     default:
         EPRINTF("Bad mode\n");
     }
 
-    if(m_yuv_size > 0){
-        int i = 0;
-        for(i = 0; i < 2; i++){
-            m_yuv_image[i] = (uint8_t *)malloc(sizeof(uint8_t)*m_yuv_size);
-        }
-        
-    }
-
     DPRINTF("new framebuffer: %dx%d mode: %s\n", width, height, print_mode(mode));
-    DPRINTF("                 RGB_size: [%dB--0x%xB](%dw--0x%xw)\n",
-            m_rgb_size, m_rgb_size, m_rgb_size>>2, m_rgb_size>>2);
-    DPRINTF("                 YUV_size: [%dB--0x%xB]\n", m_yuv_size, m_yuv_size);
+    DPRINTF("                 buf_size: [%dB--0x%xB]\n", m_buf_size, m_buf_size);
 
     if (nb_fb == 0)
         atexit (close_ramdacs);
 
     init_viewer();
 
-    switch(m_mode){
-    case NONE:
-        EPRINTF("Mode not set\n");
-        break;
-    case GREY:
-    case RGB:
-    case BGR:
-    case ARGB:
-    case BGRA:
-        m_io_res->mem      = m_rgb_image;
-        m_io_res->mem_size = m_rgb_size;
-        break;
-    case YVYU: /* YUV 4:2:2 */
-    case YV16:
-    case YV12: /* YUV 4:2:0 */
-        m_io_res->mem      = m_yuv_image;
-        m_io_res->mem_size = m_yuv_size; 
-        break;
-    default:
-        EPRINTF("Bad mode\n");
-    }
-
-    m_regs->m_status = FB_RUNNING;
+    m_io_res->mem      = m_shm_buf;
+    m_io_res->mem_size = m_buf_size;
+    m_regs->m_status   = FB_RUNNING;
     return;
 }
 
@@ -467,36 +418,7 @@ fb_device::display_thread(void)
               DPRINTF("Transfer complete\n");
           }
         }
-        
-        switch(m_mode){
-        case NONE:
-            DPRINTF("Mode not set !\n");
-            break;
-        case GREY:
-        case RGB:
-            /* Nothing to do */
-            break;
-        case BGR:
-            convert_frame_bgr(proc_idx);
-            break;
-        case ARGB:
-            convert_frame_argb(proc_idx);
-            break;
-        case BGRA:
-            convert_frame_bgra(proc_idx);
-            break;
-        case YVYU: /* Packed YUV 4:2:2 */
-            convert_frame_yvyu(proc_idx);
-            break;
-        case YV16: /* Planar YUV 4:2:2 */
-            convert_frame_yv16(proc_idx);
-            break;
-        case YV12: /* Planar YUV 4:2:0 */
-            convert_frame_yv12(proc_idx);
-            break;
-        default:
-            EPRINTF("Bad mode: 0x%d\n", m_mode);
-        }
+
         kill (m_pid, SIGUSR1);
 
         m_regs->m_irqstat |= (1 << 0);
@@ -504,116 +426,6 @@ fb_device::display_thread(void)
 
     }
 
-}
-
-void
-yuv2rgb(uint8_t y, uint8_t u, uint8_t v, uint8_t *rgb){
-
-    int32_t y_tmp = (int32_t)y - 16;
-    int32_t u_tmp = (int32_t)u - 128;
-    int32_t v_tmp = (int32_t)v - 128;
-
-    int32_t r_tmp = 0;
-    int32_t g_tmp = 0;
-    int32_t b_tmp = 0;
-
-    uint8_t r_val = 0;
-    uint8_t g_val = 0;
-    uint8_t b_val = 0;
-        
-    y_tmp *= 298;
-    
-    r_tmp = y_tmp +            0 +    v_tmp*409 + 128;
-    g_tmp = y_tmp + u_tmp*(-100) + v_tmp*(-208) + 128;
-    b_tmp = y_tmp + u_tmp*516    +            0 + 128;
-
-    r_tmp >>= 8;
-    g_tmp >>= 8;
-    b_tmp >>= 8;
-
-    r_val = ( (r_tmp < (1<<8)) ? ((r_tmp >= 0)?r_tmp:0) : 0xFF);
-    g_val = ( (g_tmp < (1<<8)) ? ((g_tmp >= 0)?g_tmp:0) : 0xFF);
-    b_val = ( (b_tmp < (1<<8)) ? ((b_tmp >= 0)?b_tmp:0) : 0xFF);
-    
-    rgb[0] = (uint8_t)r_val;
-    rgb[1] = (uint8_t)g_val;
-    rgb[2] = (uint8_t)b_val;
-        
-    return;
-}
-
-void
-fb_device::convert_frame_bgr(int idx){
-
-    return;
-}
-
-void
-fb_device::convert_frame_argb(int idx){
-
-    return;
-}
-
-void
-fb_device::convert_frame_bgra(int idx){
-
-    int      i    = 0;
-    uint8_t *dest = m_rgb_image[idx];
-    uint8_t *src  = m_rgb_image[idx];
-
-    for(i = 0; i < (m_width*m_height); i++){
-        dest[0] = src[2];
-        dest[1] = src[1];
-        dest[2] = src[0];
-
-        src += 4;
-        dest += 3;
-    }
-
-    return;
-}
-
-
-void
-fb_device::convert_frame_yvyu(int idx){
-
-    return;
-}
-
-void
-fb_device::convert_frame_yv16(int idx){
-
-    int      i = 0, j = 0;
-    uint8_t  y, u, v;
-    uint8_t *y_buf = m_yuv_image[idx];
-    uint8_t *u_buf = y_buf + (m_width*m_height);
-    uint8_t *v_buf = u_buf + (m_width*m_height)/2;
-
-    uint8_t *rgb   = m_rgb_image[idx];
-
-    for(i = 0; i < (m_width*m_height/2); i++){
-        
-        y = y_buf[i*2];
-        u = u_buf[i];
-        v = v_buf[i];
-        
-        yuv2rgb(y, u, v, rgb);
-        rgb += 3;
-
-        y = y_buf[i*2 + 1];
-
-        yuv2rgb(y, u, v, rgb);
-        rgb += 3;
-
-    }
-
-    return;
-}
-
-void
-fb_device::convert_frame_yv12(int idx){
-
-    return;
 }
 
 /*
@@ -702,8 +514,8 @@ fb_device_master::rcv_rsp(uint8_t tid, uint8_t *data,
 /*
  * fb_device_slave
  */
-fb_device_slave::fb_device_slave (const char *_name, fb_io_resource_t *io_res,
-                                  sc_event *irq_update, sc_event *display, sc_event *start_stop)
+fb_device_slave::fb_device_slave(const char *_name, fb_io_resource_t *io_res,
+                                 sc_event *irq_update, sc_event *display, sc_event *start_stop)
 : slave_device (_name)
 {
 
@@ -732,8 +544,8 @@ fb_device_slave::display(void)
 }
 
 void
-fb_device_slave::write (unsigned long ofs, unsigned char be,
-                        unsigned char *data, bool &bErr)
+fb_device_slave::write(unsigned long ofs, unsigned char be,
+                       unsigned char *data, bool &bErr)
 {
     uint32_t  *val = (uint32_t *)data;
     uint32_t   lofs = ofs;
@@ -840,8 +652,8 @@ fb_device_slave::write (unsigned long ofs, unsigned char be,
     return;
 }
 
-void fb_device_slave::read (unsigned long ofs, unsigned char be,
-                            unsigned char *data, bool &bErr)
+void fb_device_slave::read(unsigned long ofs, unsigned char be,
+                           unsigned char *data, bool &bErr)
 {
 
     uint32_t  *val  = (uint32_t *)data;
@@ -879,7 +691,7 @@ void fb_device_slave::read (unsigned long ofs, unsigned char be,
         break;
     case FB_DEVICE_IRQCLR:
          *val = m_io_res->regs->m_irqstat;
-        DPRINTF("FB_DEVICE_IRQCLR read: %x\n", *val);
+         //DPRINTF("FB_DEVICE_IRQCLR read: %x\n", *val);
         break;
     case FB_DEVICE_CTRL:
          *val = m_io_res->regs->m_ctrl;
@@ -912,8 +724,8 @@ void fb_device_slave::read (unsigned long ofs, unsigned char be,
     return;
 }
 
-void fb_device_slave::rcv_rqst (unsigned long ofs, unsigned char be,
-                                      unsigned char *data, bool bWrite)
+void fb_device_slave::rcv_rqst(unsigned long ofs, unsigned char be,
+                               unsigned char *data, bool bWrite)
 {
     bool bErr = false;
 

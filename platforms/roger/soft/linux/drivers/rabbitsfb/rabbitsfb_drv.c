@@ -375,7 +375,7 @@ rabbitsfb_chr_write(struct file *file, const char __user *data,
     rabbitsfb_device_t *dev = (rabbitsfb_device_t *)file->private_data;
 
 
-    DMSG("write() %x bytes from 0x%08x\n", size, data);
+    DMSG("write() %x bytes from 0x%08x\n", size, (unsigned int)data);
 
     if(*loff != 0){
         EMSG("Bad write()\n");

@@ -69,7 +69,9 @@ enum rabbitsfb_mode {
     /* ******************************************* */
     RABBITSFB_MODE_YV12   = 7, /* Planar YUV 4:2:0 */
     /* ******************************************* */
-    RABBITSFB_MODE_YV16   = 8, /* Planar YUV 4:2:2 */
+    RABBITSFB_MODE_IYUV   = 8, /* Planar YUV 4:2:0 */
+    /* ******************************************* */
+    RABBITSFB_MODE_YV16   = 9, /* Planar YUV 4:2:2 */
 };
 
 struct rabbitsfb_ioc_mode {
