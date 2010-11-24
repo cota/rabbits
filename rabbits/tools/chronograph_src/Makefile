@@ -24,8 +24,7 @@ all: $(EXE)
 
 $(EXE): $(OBJS)
 	@echo Building $@ ...
-	@$(CC) $(LIBDIR) $(OBJS) $(LIBS) -o $@  2>&1 | c++filt
-	@cp $@ $(PREFIX)/$@
+	@$(CC) $(LIBDIR) $(OBJS) $(LIBS) -o $(PREFIX)/$@ 2>&1 | c++filt
 
 .cpp.o:
 	@echo Compiling $< ...
