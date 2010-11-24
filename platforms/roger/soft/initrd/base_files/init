@@ -10,5 +10,5 @@ mknod -m 666 /dev/rabbitsfb c 252 0
 
 modprobe rabbitsfb
 
-#exec /sbin/init
-exec /bin/sh
+exec /sbin/init
+#exec /bin/sh
