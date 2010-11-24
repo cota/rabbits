@@ -118,6 +118,8 @@ struct fb_reset {
 #define FB_CTRL_DMAEN   (1 << 2)
 #define FB_CTRL_DISPLAY (1 << 3)
 
+#define FB_IRQ_DMA      (1 <<  0)
+#define FB_IRQ_GLOBAL   (1 << 31)
 /*
  * FB_DEVICE_SLAVE
  */

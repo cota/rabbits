@@ -368,16 +368,17 @@ fb_device::irq_update_thread()
         wait(m_ev_irq_update);
 
         if(m_regs->m_ctrl & FB_CTRL_IRQEN){
-            if(m_regs->m_irqstat){
+            if( (m_regs->m_irqstat & ~FB_IRQ_GLOBAL) ){
                 DPRINTF("Raising IRQ\n");
-                m_regs->m_irqstat |= 1 << 31;
+                m_regs->m_irqstat |= FB_IRQ_GLOBAL;
                 irq = 1;
             }else{
                 DPRINTF("Clearing IRQ\n");
-                m_regs->m_irqstat &= ~(1 << 31);
+                m_regs->m_irqstat &= ~FB_IRQ_GLOBAL;
                 irq = 0;
             }
         }else{
+            DPRINTF("IRQ dont care\n");
             if(irq != 0){
                 irq = 0;
             }
@@ -692,7 +693,7 @@ void fb_device_slave::read(unsigned long ofs, unsigned char be,
         break;
     case FB_DEVICE_IRQCLR:
          *val = m_io_res->regs->m_irqstat;
-         //DPRINTF("FB_DEVICE_IRQCLR read: %x\n", *val);
+         DPRINTF("FB_DEVICE_IRQCLR read: %x\n", *val);
         break;
     case FB_DEVICE_CTRL:
          *val = m_io_res->regs->m_ctrl;
