@@ -167,22 +167,51 @@ sram_device::read(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
         if (!err)
             switch (lwid)
             {
+
+#if 0 /* The value version */
             case 1:
                 *((uint8_t *)data + loffs) =
                     *((uint8_t *)(mem + ofs) + loffs);
                 break;
+
             case 2:
                 *((uint16_t *)data + loffs) =
                     *((uint16_t *)(mem + ofs) + loffs);
                 break;
+
             case 4:
                 *((uint32_t *)data + loffs) =
                     *((uint32_t *)(mem + ofs) + loffs);
                 break;
+
             case 8:
                 *((uint32_t *)data + 0) = *((uint32_t *)(mem + ofs) + 0);
                 *((uint32_t *)data + 1) = *((uint32_t *)(mem + ofs) + 1);
                 break;
+#endif
+
+#if 1 /* The address version */
+            case 1:
+                *(uint32_t *)((uint8_t *)data + loffs) =
+                    (uint32_t)((uint8_t *)(mem + ofs) + loffs);
+                break;
+
+            case 2:
+                *(uint32_t *)((uint16_t *)data + loffs) =
+                    (uint32_t)((uint16_t *)(mem + ofs) + loffs);
+                break;
+
+            case 4:
+                *((uint32_t *)data + loffs) =
+                    (uint32_t)((uint32_t *)(mem + ofs) + loffs);
+                break;
+
+            case 8:
+                *((uint32_t *)data + 0) =
+                    (uint32_t)((uint32_t *)(mem + ofs) + 0);
+                /* *((uint32_t *)data + 1) = *((uint32_t *)(mem + ofs) + 1); */
+                break;
+#endif
             default:
                 err = 1;
             }
