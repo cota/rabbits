@@ -34,3 +34,14 @@ mkdir -p ${LOG_DIR}
 cd rabbitsfb
 echo "Installing rabbitsfb driver ..."
 ./compile_arm.sh &> ${LOG_DIR}/compile.log || exit
+cd ..
+
+cd h264dbf_drv
+echo "Installing H264 DBF driver ..."
+./compile_arm.sh &> ${LOG_DIR}/compile.log || exit
+cd ..
+
+cd qemu_drv
+echo "Installing QEMU driver ..."
+./compile_arm.sh &> ${LOG_DIR}/compile.log || exit
+cd ..
