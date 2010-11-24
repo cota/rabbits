@@ -217,7 +217,6 @@ void qemu_cpu_wrapper::set_cpu_fv_level (unsigned long val)
     #endif
 }
 
-
 unsigned long qemu_cpu_wrapper::get_cpu_fv_level ()
 {
     return m_fv_level;
@@ -360,6 +359,17 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
         case GET_SECONDARY_STARTUP_ADDRESS:
             val = s_addr_startup_secondary;
             break;
+        case GET_MEASURE_RES:
+        {
+            unsigned long     mean_use, mean_power = 0;
+            
+#ifdef ENERGY_TRACE_ENABLED
+            mean_power = etrace.stop_measure ();
+            mean_use = m_logs->stop_measure ();
+#endif
+            val = mean_use | (mean_power << 16);
+        }
+        break;
         default:
             val = 0xFFFFFFFF;
             cerr << "Error: Bad qemu_wrapper address " << std::hex << addr <<
@@ -481,13 +491,19 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
             break;
         case SWI_ACK:
         {
-            #if 0
+#if 0
             static int cnt = 0;
             printf ("\t\t\tACK cpu=%d, data=%lu (%d)\n", m_cpuindex, data, ++cnt);
-            #endif
+#endif
             
             m_port_access->swi_ack (m_cpuindex, data);
         }
+        break;
+        case SET_MEASURE_START:
+#ifdef ENERGY_TRACE_ENABLED
+            etrace.start_measure ();
+            m_logs->start_measure ();
+#endif
             break;
         default:
             cerr << "Error: Bad qemu_wrapper address " << std::hex << addr 

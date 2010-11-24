@@ -32,6 +32,8 @@ public:
     void add_time_at_fv (int cpu, int fv_level, unsigned long long time);
     unsigned long get_cpu_ncycles (unsigned long cpu);
     void update_fv_grf ();
+    void start_measure ();
+    unsigned long stop_measure ();
 
 protected:
     void internal_init ();
@@ -40,6 +42,7 @@ protected:
     int					m_ncpu;
     unsigned long long	*m_ns_time_at_fv;
     unsigned long long	*m_ns_time_at_fv_prev;
+    unsigned long long  *m_ns_time_at_fv_measure;
     unsigned long		*m_hword_ncycles;
     FILE				*file_fv;
     int					m_pipe_grf_run_at_fv;

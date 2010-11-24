@@ -35,6 +35,7 @@
 
 #define macro_ns_time_at_fv ((unsigned long long (*)[m_cpu_nb_fv_levels_1]) m_ns_time_at_fv)
 #define macro_ns_time_at_fv_prev ((unsigned long long (*)[m_cpu_nb_fv_levels_1]) m_ns_time_at_fv_prev)
+#define macro_ns_time_at_fv_measure ((unsigned long long (*)[m_cpu_nb_fv_levels_1]) m_ns_time_at_fv_prev)
 
 static int      s_pid_chrono_cpu_fvs[20];
 static int      s_nb_chrono_cpu_fvs = 0;
@@ -73,6 +74,12 @@ cpu_logs::~cpu_logs ()
         m_ns_time_at_fv_prev = NULL;
     }
 
+    if (m_ns_time_at_fv_measure)
+    {
+        delete [] m_ns_time_at_fv_measure;
+        m_ns_time_at_fv_measure = NULL;
+    }
+    
     if (m_hword_ncycles)
     {
         delete [] m_hword_ncycles;
@@ -108,9 +115,10 @@ void cpu_logs::internal_init ()
 {
     int					i, cpu;
 
-    m_ns_time_at_fv = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
-    m_ns_time_at_fv_prev = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
-    m_hword_ncycles = new unsigned long [m_ncpu];
+    m_ns_time_at_fv         = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
+    m_ns_time_at_fv_prev    = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
+    m_ns_time_at_fv_measure = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
+    m_hword_ncycles         = new unsigned long [m_ncpu];
 
     for (cpu = 0; cpu < m_ncpu; cpu++)
     {
@@ -118,6 +126,7 @@ void cpu_logs::internal_init ()
         {
             macro_ns_time_at_fv[cpu][i] = 0;
             macro_ns_time_at_fv_prev[cpu][i] = 0;
+            macro_ns_time_at_fv_measure[cpu][i] = 0;
         }
         m_hword_ncycles[cpu] = (unsigned long) -1;
     }
@@ -299,6 +308,36 @@ void cpu_logs::update_fv_grf ()
             m_ncpu * m_cpu_nb_fv_levels_1 * sizeof (unsigned long long));
     }
     #endif
+}
+
+void cpu_logs::start_measure ()
+{
+    memcpy (m_ns_time_at_fv_measure, m_ns_time_at_fv, m_ncpu *
+        m_cpu_nb_fv_levels_1 * sizeof (unsigned long long));
+}
+
+unsigned long cpu_logs::stop_measure ()
+{
+    double                  s1, s2, diff;
+    unsigned long           val = 0;
+    int                     i, cpu;
+
+    s1 = 0;
+    s2 = 0;
+
+    for (cpu = m_ncpu - 1; cpu >= 0; cpu--)
+    {
+        for (i = 0; i < m_cpu_nb_fv_levels_1; i++)
+        {
+            diff = macro_ns_time_at_fv[cpu][i] - macro_ns_time_at_fv_measure[cpu][i];
+            s1 += diff * m_cpu_fv_percents[i];
+            s2 += diff;
+        }
+    }
+
+    val = (unsigned long) (s1 / s2 * 100);
+
+    return val;
 }
 
 /*

@@ -184,7 +184,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
         #endif
     }
 
-    SC_THREAD (stnoc_interrupts_thread);
+    SC_THREAD (interrupts_thread);
     SC_THREAD (timeout_thread);
 }
 
@@ -259,7 +259,7 @@ public:
     inline my_sc_event_or_list& operator | (const sc_event& e){push_back (e);return *this;}
 };
 
-void qemu_wrapper::stnoc_interrupts_thread ()
+void qemu_wrapper::interrupts_thread ()
 {
     if (!m_ninterrupts)
         return;
