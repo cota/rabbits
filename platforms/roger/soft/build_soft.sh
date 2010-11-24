@@ -119,6 +119,9 @@ apps_install(){
 	cd ${HERE}/apps/scripts
 	./install_mjpeg.sh || return
 
+	cd ${HERE}/apps/scripts
+	./install_h264.sh || return
+
     touch ${STAMPS_DIR}/apps_installed
 }
 
