@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define DEBUG_CONV
-
 #ifdef DEBUG_CONV
 #define DPRINTF(fmt, args...)                                           \
     do { fprintf(stdout, "fbviewer:conv: " fmt , ##args); } while (0)

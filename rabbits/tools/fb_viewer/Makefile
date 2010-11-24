@@ -1,7 +1,7 @@
 CC         = gcc
 LD         = gcc
 
-CPPFLAGS   =
+CPPFLAGS   = #-DDEBUG_CONV -DDEBUG_FBVIEWER
 CFLAGS     = -Wall -Wextra -std=c99 -g -O3
 LDFLAGS    =
 

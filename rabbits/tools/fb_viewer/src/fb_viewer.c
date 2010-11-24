@@ -34,8 +34,6 @@
 
 #include "conv.h"
 
-#define DEBUG_FBVIEWER
-
 #ifdef DEBUG_FBVIEWER
 #define DPRINTF(fmt, args...)                               \
     do { fprintf(stdout, "fbviewer: " fmt , ##args); } while (0)
