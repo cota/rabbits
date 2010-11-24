@@ -12,6 +12,7 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/master_device      \
                $(COMPONENTS)/framebuffer        \
                $(COMPONENTS)/sram               \
+               $(COMPONENTS)/dbf                \
                $(COMPONENTS)/timer              \
                $(COMPONENTS)/tty_serial         \
                $(COMPONENTS)/etrace             \

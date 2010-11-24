@@ -34,6 +34,7 @@
 #include <qemu_wrapper_cts.h>
 #include <interconnect.h>
 #include <sram_device.h>
+#include <dbf_device.h>
 #include <framebuffer_device.h>
 #include <timer_device.h>
 #include <tty_serial_device.h>
@@ -83,7 +84,9 @@ int sc_main (int argc, char ** argv)
     sram_device       *sram  = new sram_device ("sram", 0x800000);
     tty_serial_device *tty   = new tty_serial_device ("tty");
     sem_device        *sem   = new sem_device ("sem", 0x100000);
-    fb_device         *fb    = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
+    fb_device         *fb    = new fb_device("fb", is.no_cpus, &fb_res_stat); 
+    dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 1/* , nslaves + 1*/);
+
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
 
@@ -100,42 +103,50 @@ int sc_main (int argc, char ** argv)
         slaves[nslaves++] = timers[i];   // 5 + i
     }
 
-    int                         no_irqs = ntimers + 2;
-    int                         int_cpu_mask [] = {1, 1, 0, 0, 0, 0};
+    int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
+    int                         int_cpu_mask [] = {1, 1, 1, 1, 0, 0};
     sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
     for (i = 0; i < ntimers; i++)
         timers[i]->irq(wires_irq_qemu[i]);
     tty->irq_line(wires_irq_qemu[ntimers]);
     fb->irq(wires_irq_qemu[ntimers + 1]);
+    dbf->irq(wires_irq_qemu[ntimers + 2]);
 
     //interconnect
     onoc = new interconnect ("interconnect",
-                             is.no_cpus + 1,  /* masters: CPUs + FB */
-                             nslaves);        /* slaves:  ...       */
+                             is.no_cpus + 2,  /* masters: CPUs + FB + DBF */
+                             nslaves + 1);    /* slaves:  ...             */
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
+
+    onoc->connect_slave_64(nslaves, dbf->get_port, dbf->put_port);
 
     arm_load_kernel (&is);
 
     //masters
-    qemu_wrapper                qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 0, 
-                                    is.cpu_family, is.cpu_model, is.ramsize);
-    qemu1.add_map (0xA0000000, 0x10000000); // (base address, size)
+    qemu_wrapper qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 0, 
+                        is.cpu_family, is.cpu_model, is.ramsize);
+    qemu1.add_map(0xA0000000, 0x10000000); // (base address, size)
     qemu1.set_base_address (QEMU_ADDR_BASE);
-    for (i = 0; i < no_irqs; i++)
+    for(i = 0; i < no_irqs; i++)
         qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
-    for (i = 0; i < is.no_cpus; i++)
-        onoc->connect_master_64 (i, qemu1.get_cpu (i)->put_port, qemu1.get_cpu (i)->get_port);
+    for(i = 0; i < is.no_cpus; i++)
+        onoc->connect_master_64 (i, qemu1.get_cpu(i)->put_port, qemu1.get_cpu(i)->get_port);
 
-    if (is.gdb_port > 0)
-    {
-        qemu1.m_qemu_import.gdb_srv_start_and_wait (is.gdb_port);
+    if(is.gdb_port > 0){
+        qemu1.m_qemu_import.gdb_srv_start_and_wait(is.gdb_port);
         //qemu1.set_unblocking_write (0);
     }
 
+    /* Master : FrameBuffer */
     onoc->connect_master_64(is.no_cpus, 
                             fb->get_master()->put_port,
                             fb->get_master()->get_port);
+
+    /* Master : H264 DBF */
+    onoc->connect_master_64(is.no_cpus + 1,
+                            dbf->master_put_port,
+                            dbf->master_get_port);
 
     sc_start ();
 
