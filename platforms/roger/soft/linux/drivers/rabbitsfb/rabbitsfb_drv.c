@@ -112,6 +112,21 @@ rabbitsfb_set_addr(rabbitsfb_device_t *dev, rabbitsfb_ioc_addr_t *addr)
 }
 
 int
+rabbitsfb_dma_enable(rabbitsfb_device_t *dev)
+{
+    int ret = 0;
+    u32 val = 0;
+
+    DMSG("DMA Enable\n");
+
+    val = readl((dev->base_addr) + RABBITSFB_CTRL);
+    val |= RABBITSFB_CTRL_DMAEN;
+    writel(val, (dev->base_addr) + RABBITSFB_CTRL);
+
+    return ret;
+}
+
+int
 rabbitsfb_display(rabbitsfb_device_t *dev)
 {
     int ret = 0;
@@ -230,6 +245,12 @@ rabbitsfb_chr_ioctl_irq_unregister(rabbitsfb_device_t *dev, void *buf)
 }
 
 static int
+rabbitsfb_chr_ioctl_dmaen(rabbitsfb_device_t *dev)
+{
+    return rabbitsfb_dma_enable(dev); 
+}
+
+static int
 rabbitsfb_chr_ioctl_display(rabbitsfb_device_t *dev)
 {
     return rabbitsfb_display(dev); 
@@ -328,6 +349,7 @@ rabbitsfb_chr_ioctl(struct inode *inode, struct file *file,
         break;
     case RABBITSFB_IOCDMAEN:
         DMSG("RABBITSFB_IOCDMAEN\n");
+        ret = rabbitsfb_chr_ioctl_dmaen(dev);
         break;
     case RABBITSFB_IOCDISPLAY:
         DMSG("RABBITSFB_IOCDISPLAY\n");

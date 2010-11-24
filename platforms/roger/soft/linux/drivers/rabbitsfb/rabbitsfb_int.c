@@ -8,6 +8,11 @@
 #include "rabbitsfb_ioctl.h"
 #include "rabbitsfb_regs.h"
 #include "qemu_wrapper_cts.h"
+
+#if 0
+#define DEBUG
+#endif
+
 #include "debug.h"
 
 #define RABBITSFB_IRQ_NO   34
@@ -99,8 +104,9 @@ rabbitsfb_int_enable(rabbitsfb_device_t *dev)
         writel (qemu_intr_enabled, __io_address(QEMU_ADDR_BASE) + SET_SYSTEMC_INT_ENABLE);
 
         //enable interrupt in ramdac
-        fb_old_status = readl (dev->base_addr + RABBITSFB_STAT);
-        writel(fb_old_status | 0x1, dev->base_addr + RABBITSFB_CTRL);
+        fb_old_status  = readl (dev->base_addr + RABBITSFB_STAT);
+        fb_old_status |= RABBITSFB_CTRL_IRQEN;
+        writel(fb_old_status, dev->base_addr + RABBITSFB_CTRL);
 
         dev->irq_en = 1;
     }
@@ -116,7 +122,8 @@ void rabbitsfb_disable_device_irq(rabbitsfb_device_t *dev)
 
      //disable interrupt in ramdac & shut off the display
     fb_old_status = readl (dev->base_addr + RABBITSFB_STAT);
-    writel(fb_old_status & ~0x3, dev->base_addr + RABBITSFB_CTRL);
+    fb_old_status &= ~RABBITSFB_CTRL_IRQEN;
+    writel(fb_old_status, dev->base_addr + RABBITSFB_CTRL);
 
     //disable interrupt in qemu
     qemu_intr_enabled = readl(__io_address(QEMU_ADDR_BASE) + GET_SYSTEMC_INT_ENABLE);
