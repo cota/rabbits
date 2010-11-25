@@ -21,7 +21,7 @@
 #include <etrace_if.h>
 
 //#define DEBUG_LOG_SLICES
-#define DEBUG_DBF
+//#define DEBUG_DBF
 
 #ifdef DEBUG_DBF
 #define DPRINTF printf
