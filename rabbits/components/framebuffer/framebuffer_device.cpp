@@ -621,7 +621,8 @@ fb_device_slave::write(unsigned long ofs, unsigned char be,
 
     default:
         mem_ofs = lofs - FB_DEVICE_MEM;
-        if(mem_ofs < (m_io_res->mem_size>>2)){
+        if( (mem_ofs >= 0)                      &&
+            (mem_ofs < (m_io_res->mem_size>>2)) ){
 
             if( m_io_res->regs->m_disp_wrap     &&
                 ((mem_ofs == 0) && (be & 0x1))  ){
