@@ -433,9 +433,11 @@ static int
 rabbitsfb_chr_mmap(struct file *file, struct vm_area_struct *vma)
 {
     int                 ret      = 0; 
-    rabbitsfb_device_t *dev      = (rabbitsfb_device_t *)file->private_data;
     uint32_t            vsize    = vma->vm_end - vma->vm_start;
     unsigned long       physical = RABBITSFB_BASE_ADDRESS + RABBITSFB_MEM_BASE;
+    #ifdef DEBUG
+    rabbitsfb_device_t *dev      = (rabbitsfb_device_t *)file->private_data;
+    #endif
 
     vma->vm_flags |= VM_IO | VM_RESERVED;
 

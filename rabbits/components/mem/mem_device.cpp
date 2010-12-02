@@ -40,7 +40,7 @@ mem_device::mem_device (const char *_name, unsigned long _size) : slave_device (
     mem = new unsigned char [size];
     memset (mem, 0, size);
 
-    printf("mem_device: Memory area location: 0x%08x\n", mem);
+    DPRINTF ("mem_device: Memory area location: 0x%08x\n", mem);
 
 }
 

@@ -52,10 +52,7 @@
 #define TEST_WRITE_SYSTEMC							0x0000
 #define SYSTEMC_SHUTDOWN							0x0004
 #define SET_SYSTEMC_CRT_CPU_FV_LEVEL				0x0010
-#define SET_SYSTEMC_CPU1_FV_LEVEL					0x0014
-#define SET_SYSTEMC_CPU2_FV_LEVEL					0x0018
-#define SET_SYSTEMC_CPU3_FV_LEVEL					0x001C
-#define SET_SYSTEMC_CPU4_FV_LEVEL					0x0020
+#define SET_SYSTEMC_CPUX_FV_LEVEL					0x0014
 #define SET_SYSTEMC_ALL_FV_LEVEL                    0x0024
 #define SET_SYSTEMC_INT_ENABLE                      0x0040
 #define LOG_END_OF_IMAGE                            0x0050

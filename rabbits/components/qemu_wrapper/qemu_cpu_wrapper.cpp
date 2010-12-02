@@ -404,14 +404,8 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
             set_cpu_fv_level (data);
             break;
 
-        case SET_SYSTEMC_CPU1_FV_LEVEL:
-        case SET_SYSTEMC_CPU2_FV_LEVEL:
-        case SET_SYSTEMC_CPU3_FV_LEVEL:
-        case SET_SYSTEMC_CPU4_FV_LEVEL:
-        {
-            unsigned long			cpu = ((addr - SET_SYSTEMC_CPU1_FV_LEVEL) >> 2);
-            m_port_access->set_cpu_fv_level (cpu, data);
-        }
+        case SET_SYSTEMC_CPUX_FV_LEVEL:
+            m_port_access->set_cpu_fv_level (data & 0xFF, data >> 8);
         break;
         case SET_SYSTEMC_ALL_FV_LEVEL:
             m_port_access->set_cpu_fv_level ((unsigned long) -1, data);

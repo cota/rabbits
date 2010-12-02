@@ -5,7 +5,7 @@
 # /bin/sh invocations on selected ttys
 #
 # Start an "askfirst" shell on the console (whatever that may be)
-ttyAMA0::askfirst:-/bin/sh
+ttyAMA0::respawn:-/bin/sh
 # Start an "askfirst" shell on /dev/tty2-4
 #tty2::askfirst:-/bin/sh
 #tty2::askfirst:-/bin/sh

@@ -30,6 +30,9 @@
 
 #include <linux/ioctl.h>
 
+typedef struct qemu_ioc_set_cpux_fv qemu_ioc_set_cpux_fv_t;
+
+
 #define QEMU_DRV_IOC_MAGIC  'q'
 
 #define QEMU_DRV_IOCRESET                    _IO  (QEMU_DRV_IOC_MAGIC, 0)
@@ -37,8 +40,14 @@
 #define QEMU_DRV_IOC_TEST                    _IO  (QEMU_DRV_IOC_MAGIC, 2)
 #define QEMU_DRV_IOCS_PROCESS_FV             _IOW (QEMU_DRV_IOC_MAGIC, 3, unsigned long)
 #define QEMU_DRV_IOC_MEASURE_STA             _IO  (QEMU_DRV_IOC_MAGIC, 4)
-/* #define QEMU_DRV_IOC_MEASURE_STO             _IO  (QEMU_DRV_IOC_MAGIC, 5) */
 #define QEMU_DRV_IOC_MEASURE_STO             _IOR (QEMU_DRV_IOC_MAGIC, 5, unsigned char *)
+#define QEMU_DRV_IOCS_SET_CPUX_FV            _IOW (QEMU_DRV_IOC_MAGIC, 6,  qemu_ioc_set_cpux_fv_t *)
+
+struct qemu_ioc_set_cpux_fv
+{
+    uint32_t cpu;
+    uint32_t frequency_level;
+};
 
 #endif
 

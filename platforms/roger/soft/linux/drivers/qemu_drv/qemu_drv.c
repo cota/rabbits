@@ -109,6 +109,20 @@ qemu_drv_chr_ioctl_set_register_32 (qemu_drv_device_t *dev, void *user_buf, unsi
     return ret;
 }
 
+static int
+qemu_drv_chr_ioctl_set_cpux_fv (qemu_drv_device_t *dev, void *user_buf)
+{
+    int                         ret = 0;
+    qemu_ioc_set_cpux_fv_t      param;
+    uint32_t                    val;
+
+    COPY_FROM_USER ((void *) &param, user_buf, sizeof (qemu_ioc_set_cpux_fv_t));
+    val = param.cpu + (param.frequency_level << 8);
+    writel (val, dev->base_addr + SET_SYSTEMC_CPUX_FV_LEVEL);
+
+    return ret;
+}
+
 /*
 static int
 qemu_drv_chr_ioctl_set_register_8 (qemu_drv_device_t *dev, void *user_buf, unsigned long reg_ofs)
@@ -210,8 +224,8 @@ static int
 qemu_drv_chr_ioctl (struct inode *inode, struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
-    qemu_drv_device_t          *dev = NULL;
-		uint32_t                    val = 0; 
+    qemu_drv_device_t           *dev = NULL;
+    uint32_t                    val = 0; 
 
     dev  = file->private_data;
 
@@ -230,6 +244,10 @@ qemu_drv_chr_ioctl (struct inode *inode, struct file *file, unsigned int code, u
         case QEMU_DRV_IOCS_SET_CPUS_FV:
             DMSG ("QEMU_DRV_IOCS_SET_CPUS_FV\n");
             ret = qemu_drv_chr_ioctl_set_register_32 (dev, (void *) buffer, SET_SYSTEMC_ALL_FV_LEVEL);
+            break;
+        case QEMU_DRV_IOCS_SET_CPUX_FV:
+            DMSG ("QEMU_DRV_IOCS_SET_CPUX_FV\n");
+            ret = qemu_drv_chr_ioctl_set_cpux_fv (dev, (void *) buffer);
             break;
 		case QEMU_DRV_IOC_MEASURE_STA:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STA\n");

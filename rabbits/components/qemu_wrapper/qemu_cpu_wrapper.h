@@ -87,7 +87,7 @@ private:
     //signals & events
     sc_event                                m_ev_wakeup;
     sc_event                                m_ev_sync;
-    sc_signal <unsigned long>               m_fv_level;
+    unsigned long                           m_fv_level;
 
     //other attributes
     qemu_wrapper_requests                   *m_rqs;
