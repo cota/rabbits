@@ -184,7 +184,7 @@ void aicu_device::write (unsigned long ofs, unsigned char be, unsigned char *dat
         default:
             printf ("Bad %s::%s ofs=0x%x, be=0x%x data: 0x%x! (LOCAL) %d\n",
                     name (), __FUNCTION__, (unsigned int) lcl_ofs, (unsigned int) be,
-                    value, nb_icu);
+                    value, (int) nb_icu);
             exit (1);
         }
 
