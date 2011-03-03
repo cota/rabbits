@@ -26,11 +26,13 @@ typedef struct
     const char          *cpu_model;
     const char          *kernel_filename;
     const char          *initrd_filename;
-	 const char         *kernel_cmdline; 
+    const char          *kernel_cmdline; 
     int                 no_cpus;
     int                 ramsize;
     int                 sramsize;
     int                 gdb_port;
+    int                 fb_uninit;
+    const char          *block_device;
 } init_struct;
 
 void parse_cmdline (int argc, char **argv, init_struct *is);

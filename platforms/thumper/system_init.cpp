@@ -43,14 +43,16 @@ enum
 {
     CMDLINE_OPTION_loops,
     CMDLINE_OPTION_ncpu,
-	CMDLINE_OPTION_cpu_family,
+	  CMDLINE_OPTION_cpu_family,
     CMDLINE_OPTION_cpu,
     CMDLINE_OPTION_ram,
     CMDLINE_OPTION_sram,
     CMDLINE_OPTION_kernel,
     CMDLINE_OPTION_initrd,
     CMDLINE_OPTION_gdb_port,
-	CMDLINE_OPTION_kernel_cmd,
+  	CMDLINE_OPTION_kernel_cmd,
+    CMDLINE_OPTION_fb_uninit,
+    CMDLINE_OPTION_block_dev,
 };
 
 typedef struct
@@ -62,15 +64,17 @@ typedef struct
 
 const cmdline_option cmdline_options[] = 
 {
-    {"ncpu",    HAS_ARG, CMDLINE_OPTION_ncpu},
-    {"M",       HAS_ARG, CMDLINE_OPTION_cpu_family},
-    {"cpu",     HAS_ARG, CMDLINE_OPTION_cpu},
-    {"ram",     HAS_ARG, CMDLINE_OPTION_ram},
-    {"sram",    HAS_ARG, CMDLINE_OPTION_sram},
-    {"kernel",  HAS_ARG, CMDLINE_OPTION_kernel},
-    {"initrd",  HAS_ARG, CMDLINE_OPTION_initrd},
+    {"ncpu",      HAS_ARG, CMDLINE_OPTION_ncpu},
+    {"M",         HAS_ARG, CMDLINE_OPTION_cpu_family},
+    {"cpu",       HAS_ARG, CMDLINE_OPTION_cpu},
+    {"ram",       HAS_ARG, CMDLINE_OPTION_ram},
+    {"sram",      HAS_ARG, CMDLINE_OPTION_sram},
+    {"kernel",    HAS_ARG, CMDLINE_OPTION_kernel},
+    {"initrd",    HAS_ARG, CMDLINE_OPTION_initrd},
     {"gdb_port",  HAS_ARG, CMDLINE_OPTION_gdb_port},
-	{"append", HAS_ARG, CMDLINE_OPTION_kernel_cmd},
+  	{"append",    HAS_ARG, CMDLINE_OPTION_kernel_cmd},
+    {"uninitfb",  0,       CMDLINE_OPTION_fb_uninit},
+    {"blockdev",  HAS_ARG, CMDLINE_OPTION_block_dev},
     {NULL},
 };
 
@@ -142,9 +146,15 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
         case CMDLINE_OPTION_gdb_port:
             is->gdb_port = atoi (optarg);
             break;
-		case CMDLINE_OPTION_kernel_cmd:
-			 is->kernel_cmdline = optarg;
-			 break;
+		    case CMDLINE_OPTION_kernel_cmd:
+			      is->kernel_cmdline = optarg;
+			      break;
+        case CMDLINE_OPTION_fb_uninit:
+            is->fb_uninit = 1;
+            break;
+        case CMDLINE_OPTION_block_dev:
+            is->block_device = optarg;
+            break;
         }
     }
 }

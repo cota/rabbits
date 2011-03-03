@@ -72,18 +72,30 @@ int sc_main (int argc, char ** argv)
 
     int n_mb  = is.no_cpus;
 
-    fb_reset_t fb_res_stat = {
-        /* .fb_start =           */    1,
-        /* .fb_w =               */  256,
-        /* .fb_h =               */  144,
-        /* .fb_mode =            */ YV16,
-        /* .fb_display_on_warp = */    1,
-    };
+    fb_reset_t    fb_res_stat;
+
+    if (is.fb_uninit)
+    {
+      fb_res_stat.fb_start  = 0;
+      fb_res_stat.fb_w      = 0;
+      fb_res_stat.fb_h      = 0;
+      fb_res_stat.fb_mode   = NONE;
+      fb_res_stat.fb_display_on_wrap = 0;
+    }
+    else
+    {
+      fb_res_stat.fb_start  = 1;
+      fb_res_stat.fb_w      = 256;
+      fb_res_stat.fb_h      = 144;
+      fb_res_stat.fb_mode   = YV16;
+      fb_res_stat.fb_display_on_wrap = 1;
+    }
 
     //slaves
     ram = new mem_device ("dynamic", is.ramsize + 0x1000);
     sl_block_device   *bl   = new sl_block_device("block", is.no_cpus,
-                                                  "ice_age_256x144_411.mjpeg", 1024);
+      (is.block_device == NULL) ? "ice_age_256x144_411.mjpeg" : is.block_device, 
+      1024);
     fb_device         *fb   = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
     sl_tty_device     *tty0 = new sl_tty_device ("tty0", 1);
     sl_tty_device     *tty1 = new sl_tty_device ("tty1", 1);
