@@ -122,6 +122,9 @@ apps_install(){
 	cd ${HERE}/apps/scripts
 	./install_h264.sh || return
 
+    cd ${HERE}/apps/hac
+    ./compile_arm.sh || return
+
     touch ${STAMPS_DIR}/apps_installed
 }
 

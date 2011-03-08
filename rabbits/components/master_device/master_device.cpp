@@ -37,7 +37,7 @@ master_device::~master_device (void)
 void master_device::response_thread ()
 {
     vci_response                    resp;
-    unsigned char                   tid, ropc, rerror;
+    unsigned char                   tid, rerror;
     unsigned char be;
     unsigned char data[8];
 
@@ -46,8 +46,6 @@ void master_device::response_thread ()
         int ofs = 0;
         int nbytes = 0;
         int i = 0;
-
-
 
         get_port->get (resp);
         //ropc = resp.controls.r_opcode;

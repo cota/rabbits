@@ -40,8 +40,8 @@
 #include <tty_serial_device.h>
 #include <sem_device.h>
 #include <mem_device.h>
+#include <sl_block_device.h>
 #include <qemu_imported.h>
-
 #include <qemu_wrapper_cts.h>
 
 #ifndef O_BINARY
@@ -86,6 +86,8 @@ int sc_main (int argc, char ** argv)
     sem_device        *sem   = new sem_device ("sem", 0x100000);
     fb_device         *fb    = new fb_device("fb", is.no_cpus, &fb_res_stat); 
     dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 1/* , nslaves + 1*/);
+    sl_block_device   *bl    = new sl_block_device("block", is.no_cpus + 2, NULL, 1);
+
 
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
@@ -95,12 +97,13 @@ int sc_main (int argc, char ** argv)
     slaves[nslaves++] = fb->get_slave(); // 2
     slaves[nslaves++] = tty;             // 3
     slaves[nslaves++] = sem;             // 4
+    slaves[nslaves++] = bl->get_slave(); // 5
 
     for (i = 0; i < ntimers; i++){
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new timer_device (buf);
-        slaves[nslaves++] = timers[i];   // 5 + i
+        slaves[nslaves++] = timers[i];   // 6 + i
     }
 
     int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
@@ -114,7 +117,7 @@ int sc_main (int argc, char ** argv)
 
     //interconnect
     onoc = new interconnect ("interconnect",
-                             is.no_cpus + 2,  /* masters: CPUs + FB + DBF */
+                             is.no_cpus + 3,  /* masters: CPUs + FB + DBF + BL*/
                              nslaves + 1);    /* slaves:  ...             */
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
@@ -147,6 +150,13 @@ int sc_main (int argc, char ** argv)
     onoc->connect_master_64(is.no_cpus + 1,
                             dbf->master_put_port,
                             dbf->master_get_port);
+
+    /* Block device*/
+    sc_signal<bool>         bl_irq_wire;
+    bl->irq (bl_irq_wire);
+    onoc->connect_master_64(is.no_cpus + 2, 
+                            bl->get_master()->put_port,
+                            bl->get_master()->get_port);
 
     sc_start ();
 

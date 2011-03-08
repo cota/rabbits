@@ -38,6 +38,7 @@ enum sl_block_op {
 	BLOCK_DEVICE_NOOP,
 	BLOCK_DEVICE_READ,
 	BLOCK_DEVICE_WRITE,
+	BLOCK_DEVICE_FILE_NAME,
 };
 
 enum sl_block_status {
@@ -90,7 +91,6 @@ private:
                 unsigned char *data, bool &bErr);
     void read (unsigned long ofs, unsigned char be,
                unsigned char *data, bool &bErr);
-
 
 private:
     sc_event                 *ev_op_start;
@@ -156,6 +156,7 @@ public:
 private:
     void irq_update_thread(void);
     void control_thread(void);
+    void open_host_file (const char *fname);
 
 public:
     sc_out<bool>        irq;

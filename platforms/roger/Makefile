@@ -11,6 +11,7 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/slave_device       \
                $(COMPONENTS)/master_device      \
                $(COMPONENTS)/framebuffer        \
+               $(COMPONENTS)/sl_blockdevice     \
                $(COMPONENTS)/sram               \
                $(COMPONENTS)/dbf                \
                $(COMPONENTS)/timer              \
