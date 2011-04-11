@@ -85,6 +85,16 @@ sl_block_device::~sl_block_device ()
 
 }
 
+
+static off_t get_file_size (int fd)
+{
+    off_t   old_pos = lseek (fd, 0, SEEK_CUR);
+    off_t   ret     = lseek (fd, 0, SEEK_END);
+    lseek (fd, old_pos, SEEK_SET);
+
+    return ret;
+}
+
 void sl_block_device::open_host_file (const char *fname)
 {
     if (m_fd != -1)
@@ -101,7 +111,7 @@ void sl_block_device::open_host_file (const char *fname)
             return;
         }
 
-        m_cs_regs->m_size = lseek (m_fd, 0, SEEK_END) / m_cs_regs->m_block_size;
+        m_cs_regs->m_size = get_file_size (m_fd) / m_cs_regs->m_block_size;
     }
 }
 
@@ -120,10 +130,9 @@ sl_block_device::get_slave ()
 void
 sl_block_device::control_thread ()
 {
-
-    int func_ret = 0;
-    uint32_t offset = 0;
-    uint32_t addr = 0;
+    uint32_t        offset, addr, transfer_size;
+    uint8_t         *data_buff;
+    int             func_ret;
 
     while(1)
     {
@@ -137,15 +146,15 @@ sl_block_device::control_thread ()
             break;
         case BLOCK_DEVICE_READ:
             m_cs_regs->m_status = BLOCK_DEVICE_BUSY;
-            m_transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
+            transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
 
-            m_data = new uint8_t[m_transfer_size+4];
+            data_buff = new uint8_t[transfer_size + 4];
 
-            DPRINTF("Got a BLOCK_DEVICE_READ of size %x\n", m_transfer_size);
+            DPRINTF("Got a BLOCK_DEVICE_READ of size %x\n", transfer_size);
 
             /* Read in device */
             lseek(m_fd, m_cs_regs->m_lba*m_cs_regs->m_block_size, SEEK_SET);
-            func_ret = ::read(m_fd, m_data, m_transfer_size);
+            func_ret = ::read(m_fd, data_buff, transfer_size);
             addr = m_cs_regs->m_buffer;
             if (func_ret < 0)
             {
@@ -156,16 +165,25 @@ sl_block_device::control_thread ()
                 break;
             }
             m_cs_regs->m_count = func_ret / m_cs_regs->m_block_size;
+            transfer_size = func_ret;
 
-            if (m_cs_regs->m_count)
+            if (transfer_size)
             {
                 /* Send data in memory */
-                for(offset = 0; offset < m_transfer_size; offset += 4)
+                uint32_t up_4align_limit = transfer_size & ~3;
+                for(offset = 0; offset < up_4align_limit; offset += 4)
                 {
-                    func_ret = master->cmd_write(addr + offset, m_data + offset, 4);
+                    func_ret = master->cmd_write(addr + offset, data_buff + offset, 4);
                     if(!func_ret)
                         break;
                 }
+                for (; offset < transfer_size; offset++)
+                {
+                    func_ret = master->cmd_write(addr + offset, data_buff + offset, 1);
+                    if(!func_ret)
+                        break;
+                }
+
                 if(!func_ret)
                 {
                     EPRINTF("Error in Read\n");
@@ -185,21 +203,21 @@ sl_block_device::control_thread ()
 
             m_cs_regs->m_op     = BLOCK_DEVICE_NOOP;
             m_cs_regs->m_status = BLOCK_DEVICE_READ_SUCCESS;
-            delete m_data;
+            delete data_buff;
 
             break;
         case BLOCK_DEVICE_WRITE:
             DPRINTF("Got a BLOCK_DEVICE_WRITE\n");
             m_cs_regs->m_status = BLOCK_DEVICE_BUSY;
-            m_transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
+            transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
 
-            m_data = new uint8_t[m_transfer_size + 4];
+            data_buff = new uint8_t[transfer_size + 4];
             addr = m_cs_regs->m_buffer;
 
             /* Read data from memory */
-            for(offset = 0; offset < m_transfer_size; offset += 4)
+            for(offset = 0; offset < transfer_size; offset += 4)
             {
-                func_ret = master->cmd_read(addr + offset, m_data + offset, 4);
+                func_ret = master->cmd_read(addr + offset, data_buff + offset, 4);
                 if(!func_ret)
                     break;
             }
@@ -213,7 +231,9 @@ sl_block_device::control_thread ()
 
             /* Write in the device */
             lseek(m_fd, m_cs_regs->m_lba*m_cs_regs->m_block_size, SEEK_SET);
-            ::write(m_fd, m_data, m_transfer_size);
+            ::write(m_fd, data_buff, transfer_size);
+
+            m_cs_regs->m_size = get_file_size (m_fd) / m_cs_regs->m_block_size;
 
             /* Update everything */
             if(m_cs_regs->m_irqen)
@@ -224,27 +244,27 @@ sl_block_device::control_thread ()
             
             m_cs_regs->m_op     = BLOCK_DEVICE_NOOP;
             m_cs_regs->m_status = BLOCK_DEVICE_WRITE_SUCCESS; 
-            delete m_data;
+            delete data_buff;
 
             break;
         case BLOCK_DEVICE_FILE_NAME:
             DPRINTF("Got a BLOCK_DEVICE_FILE_NAME\n");
             m_cs_regs->m_status = BLOCK_DEVICE_BUSY;
-            m_transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
+            transfer_size = m_cs_regs->m_count * m_cs_regs->m_block_size;
 
-            m_data = new uint8_t[m_transfer_size + 4];
+            data_buff = new uint8_t[transfer_size + 4];
             addr = m_cs_regs->m_buffer;
 
             /* Read data from memory */
-            for(offset = 0; offset < m_transfer_size; offset += 4)
+            for(offset = 0; offset < transfer_size; offset += 4)
             {
-                func_ret = master->cmd_read(addr + offset, m_data + offset, 4);
+                func_ret = master->cmd_read(addr + offset, data_buff + offset, 4);
                 if(!func_ret)
                     break;
             }       
     
             if (func_ret)
-                open_host_file ((const char*) m_data);
+                open_host_file ((const char*) data_buff);
 
             if(!func_ret || m_fd == -1)
             {
@@ -255,7 +275,7 @@ sl_block_device::control_thread ()
             
             m_cs_regs->m_op     = BLOCK_DEVICE_NOOP;
             m_cs_regs->m_status = BLOCK_DEVICE_WRITE_SUCCESS; 
-            delete m_data;
+            delete data_buff;
 
             break;
         default:

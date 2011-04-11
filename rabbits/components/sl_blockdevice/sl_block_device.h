@@ -164,9 +164,6 @@ public:
 private:
     int       m_fd;
 
-    uint32_t  m_transfer_size;
-    uint8_t  *m_data;
-
     /* simulation facilities */
     sc_event  ev_irq_update;
     sc_event  ev_op_start;

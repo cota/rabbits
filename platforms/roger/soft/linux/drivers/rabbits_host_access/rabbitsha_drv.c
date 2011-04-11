@@ -60,12 +60,14 @@ static int     rabbitsha_chr_release(struct inode *, struct file *);
 
 static ssize_t rabbitsha_chr_read   (struct file *,       char __user *, size_t, loff_t *);
 static ssize_t rabbitsha_chr_write  (struct file *, const char __user *, size_t, loff_t *);
+static loff_t rabbitsha_chr_llseek  (struct file *file, loff_t off, int whence);
 
 static struct file_operations rabbitsha_chr_fops =
 {
   .owner        = THIS_MODULE,
   .read         = rabbitsha_chr_read,
   .write        = rabbitsha_chr_write,
+  .llseek       = rabbitsha_chr_llseek,
   .ioctl        = rabbitsha_chr_ioctl,
   .open         = rabbitsha_chr_open,
   .release      = rabbitsha_chr_release,
@@ -373,6 +375,38 @@ rabbitsha_chr_write(struct file *file, const char __user *data,
     
     return size;
 }
+
+static loff_t
+rabbitsha_chr_llseek (struct file *file, loff_t off, int whence)
+{
+    rabbitsha_device_t  *device = (rabbitsha_device_t *) file->private_data;
+    loff_t              newpos;
+
+    if (device->state == 1)
+    {
+        EMSG ("no host file opened\n");
+        return -ENXIO;
+    }
+
+    switch(whence)
+    {
+    case 0: /* SEEK_SET */
+        newpos = off;
+        break;
+    case 1: /* SEEK_CUR */
+        newpos = file->f_pos + off;
+        break;
+    case 2: /* SEEK_END */
+        newpos = readl (device->base_addr + BLOCK_DEVICE_SIZE) + off;
+        break;
+    default: /* can’t happen */
+        return -EINVAL;
+    }
+
+    file->f_pos = newpos;
+    return newpos;
+}
+
 
 static int
 rabbitsha_cdev_setup(rabbitsha_device_t *dev, int index)
