@@ -85,7 +85,7 @@ static int PicWidthInMbs;
 class dbf_device_link
 {
 public:
-	 dbf_device_link (sc_event *p, uint32_t *irq_stat);
+    dbf_device_link (sc_event *p, uint32_t *irq_stat);
     ~dbf_device_link ();
     void init ();
     void uninit ();
@@ -100,14 +100,14 @@ public:
 public:
     unsigned char *m_data;
     sc_event *m_ev_irq;
-	 uint32_t *m_irq_stat;
+    uint32_t *m_irq_stat;
 
 };
 
 dbf_device_link::dbf_device_link (sc_event *p, uint32_t *irq_stat)
 {
     m_ev_irq   = p;
-	m_irq_stat = irq_stat;
+    m_irq_stat = irq_stat;
     m_data = NULL;
 }
 
@@ -164,15 +164,19 @@ dbf_device_link::set_data (unsigned long address, unsigned char data)
         unsigned char enable = m_data[REG_INT_ENABLE];
 
         data &= 0x7F;
-        if (!(status & enable) && (status & data)){
-			 *m_irq_stat = 1;
-			 m_ev_irq->notify();
-		}else{
-			 if ((status & enable) && !(status & data)){
-				  *m_irq_stat = 0;
-				  m_ev_irq->notify();
-			 }
-		}
+        if (!(status & enable) && (status & data))
+        {
+            *m_irq_stat = 1;
+            m_ev_irq->notify();
+        }
+        else
+        {
+            if ((status & enable) && !(status & data))
+            {
+                *m_irq_stat = 0;
+                m_ev_irq->notify();
+            }
+        }
 
         m_data[REG_INT_ENABLE] = data;
 
@@ -194,10 +198,11 @@ dbf_device_link::set_data (unsigned long address, unsigned char data)
                 status = 0;
 
             m_data[REG_INT_STATUS] = status;
-            if (!(status & enable)){
-				 *m_irq_stat = 0;
-				 m_ev_irq->notify();
-			}
+            if (!(status & enable))
+            {
+                *m_irq_stat = 0;
+                m_ev_irq->notify();
+            }
         }
         return;
     }
@@ -291,13 +296,13 @@ dbf_device_link::clear_slice (unsigned char slice)
 //constructor & destructor
 
 dbf_device::dbf_device (sc_module_name module_name,
-						unsigned int master_id /*, unsigned int slave_id*/)
+    unsigned int master_id /*, unsigned int slave_id*/)
 : sc_module (module_name)
 {
     m_master_id = master_id;
 
     // m_slave_id = slave_id;
-	m_irq_stat = 0;
+    m_irq_stat = 0;
 
     m_dbf_link = new dbf_device_link (&m_ev_irqupdate, &m_irq_stat);
 
@@ -451,10 +456,11 @@ void dbf_device::process_slice ()
     unsigned char tmp;
     unsigned int i, curr_mb = 0;
 
-    if (slice_id == 0){
-		 m_irq_stat = 0;
-		 m_ev_irqupdate.notify();
-	}
+    if (slice_id == 0)
+    {
+        m_irq_stat = 0;
+        m_ev_irqupdate.notify();
+    }
 
     while (1)
     {
@@ -489,7 +495,7 @@ void dbf_device::process_slice ()
         if (m_dbf_link->m_data[REG_INT_STATUS] & m_dbf_link->m_data[REG_INT_ENABLE])
         {
             m_dbf_link->m_data[REG_INT_STATUS] |= 0x80;
-			m_irq_stat = 1;
+            m_irq_stat = 1;
             m_ev_irqupdate.notify();
         }
     }
@@ -499,18 +505,22 @@ void
 dbf_device::irq_update_thread(void)
 {
 
-	 while(1){
-		  wait(m_ev_irqupdate);
-		  
-		  if( (m_irq_stat) ){
-			   DPRINTF("Raising IRQ\n");
-			   irq = 1;
-		  }else{
-			   DPRINTF("Clearing IRQ\n");
-			   irq = 0;
-		  }
-	 }
-	 return;
+    while(1)
+    {
+        wait(m_ev_irqupdate);
+
+        if (m_irq_stat)
+        {
+            DPRINTF("Raising IRQ\n");
+            irq = 1;
+        }
+        else
+        {
+            DPRINTF("Clearing IRQ\n");
+            irq = 0;
+        }
+    }
+    return;
 }
 
 unsigned int dbf_device::filter_slice (int slice)
@@ -1235,20 +1245,21 @@ void dbf_device::write_filtered_slice (unsigned char slice, int offset, int coun
     fclose (file_out);
 }
 
-#define SEND_PACK                            \
-  if (b8alg) {                                \
-    req.be = 0x0F;                        \
+#define SEND_PACK                                   \
+  if (b8alg) {                                      \
+    req.be = 0x0F;                                  \
     * (unsigned long *) (req.wdata + 0) = * (unsigned long *) (m_dbf_link->m_data + reg_addr); \
-  } else {                                \
-    req.be = 0xF0;                        \
+  } else {                                          \
+    req.be = 0xF0;                                  \
     * (unsigned long *) (req.wdata + 4) = * (unsigned long *) (m_dbf_link->m_data + reg_addr); \
-  }                                    \
-  if (bIncrementAddress) {                        \
+  }                                                 \
+  if (bIncrementAddress) {                          \
     req.address = adr_dest & 0xFFFFFFF8;            \
-    adr_dest += 4;                            \
-    b8alg = !b8alg;                            \
-  } else                                \
-    req.address = adr_dest;                    \
+    adr_dest += 4;                                  \
+    b8alg = !b8alg;                                 \
+  } else                                            \
+    req.address = adr_dest;                         \
+    req.plen = 1;                                   \
   master_put_port->put (req)
 
 void dbf_device::master_request ()
@@ -1338,8 +1349,8 @@ void dbf_device::master_request ()
         if (m_dbf_link->m_data[REG_INT_STATUS] & m_dbf_link->m_data[REG_INT_ENABLE])
         {
             m_dbf_link->m_data[REG_INT_STATUS] |= 0x80;
-			m_irq_stat = 1;
-			m_ev_irqupdate.notify();
+            m_irq_stat = 1;
+            m_ev_irqupdate.notify();
         }
     } // end while(1)
 }

@@ -28,15 +28,14 @@ public:
     qemu_wrapper_request (unsigned id);
 
 public:
-    unsigned char			tid;
-    unsigned char			ropcode;
-    unsigned char			bDone;
-    unsigned char           bWrite;
-    sc_event				evDone;
-    unsigned long			low_word;
-    unsigned long			high_word;
+    unsigned char               tid;
+    unsigned char               ropcode;
+    unsigned char               bDone;
+    unsigned char               bWrite;
+    sc_event                    evDone;
+    unsigned long               rcv_data;
 
-    qemu_wrapper_request		*m_next;
+    qemu_wrapper_request        *m_next;
 };
 
 class qemu_wrapper_requests
@@ -51,8 +50,8 @@ public:
     void WaitWBEmpty ();
 
 private:
-    qemu_wrapper_request		*m_headFree;
-    qemu_wrapper_request		*m_headBusy;
+    qemu_wrapper_request        *m_headFree;
+    qemu_wrapper_request        *m_headBusy;
     sc_event                    m_evEmpty;
 };
 

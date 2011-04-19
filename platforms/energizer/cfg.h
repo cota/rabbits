@@ -17,27 +17,15 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _QEMU_WRAPPER_ACCESS_INTERFACE_
-#define _QEMU_WRAPPER_ACCESS_INTERFACE_
+#ifndef _CFG_H_152G_
+#define _CFG_H_152G_
 
-#include <systemc.h>
+#define ENERGY_TRACE_ENABLED
+//#define TIME_AT_FV_LOG_GRF
 
-class qemu_wrapper_access_interface : public sc_interface
-{
-public:
-    virtual unsigned long get_no_cpus  () = 0;
-    virtual unsigned long get_cpu_fv_level (unsigned long cpu) = 0;
-    virtual void set_cpu_fv_level (unsigned long cpu, unsigned long val) = 0;
-    virtual void generate_swi (unsigned long cpu_mask, unsigned long swi) = 0;
-    virtual void swi_ack (int cpu, unsigned long swi_mask) = 0;
-
-    virtual unsigned long get_cpu_ncycles (unsigned long cpu) = 0;
-    virtual uint64 get_no_cycles_cpu (int cpu) = 0;
-
-    virtual unsigned long get_int_status () = 0;
-    virtual unsigned long get_int_enable () = 0;
-    virtual void set_int_enable (unsigned long val) = 0;
-};
+#ifdef ENERGY_TRACE_ENABLED
+#define ETRACE_NB_CPU_IN_GROUP 4
+#endif
 
 #endif
 

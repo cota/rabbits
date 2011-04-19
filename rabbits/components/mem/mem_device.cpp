@@ -145,20 +145,85 @@ void mem_device::write (unsigned long ofs, unsigned char be, unsigned char *data
 
 void mem_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
-    uint32_t be_off = 0;
-
     bErr = false;
-    //printf ("mem_device::read %s, ofs = %lu\n", name (), ofs);
 
-    if(be == 0xF0){
-        be_off = 4;
+    if (this->m_req.plen > 1)
+    {
+        uint32_t    be_off = 0;
+
+        if(be == 0xF0)
+            be_off = 4;
+
+        *((unsigned long *) (data + be_off)) = (unsigned long) (mem + ofs + be_off);
+
+        DPRINTF("read burst rsp: 0x%08x\n", *(uint32_t *)(data + be_off));
+
+        wait (3 * this->m_req.plen, SC_NS);
     }
+    else
+    {
+        int loffs = 0; /* data offset  */
+        int lwid  = 0; /* access width */
+        int err   = 0;
 
-    *((unsigned long *) (data + be_off)) = (unsigned long) (mem + ofs + be_off);
+        if (ofs >= size || be == 0)
+            err = 1;
 
-    DPRINTF("read rsp: 0x%08x\n", *((uint32_t *)data));
+        if (!err)
+        {
+            switch (be)
+            {
+            //byte access
+            case 0x01: loffs = 0; lwid = 1; break;
+            case 0x02: loffs = 1; lwid = 1; break;
+            case 0x04: loffs = 2; lwid = 1; break;
+            case 0x08: loffs = 3; lwid = 1; break;
+            case 0x10: loffs = 4; lwid = 1; break;
+            case 0x20: loffs = 5; lwid = 1; break;
+            case 0x40: loffs = 6; lwid = 1; break;
+            case 0x80: loffs = 7; lwid = 1; break;
+            //word access
+            case 0x03: loffs = 0; lwid = 2; break;
+            case 0x0C: loffs = 1; lwid = 2; break;
+            case 0x30: loffs = 2; lwid = 2; break;
+            case 0xC0: loffs = 3; lwid = 2; break;
+            //dword access
+            case 0x0F: loffs = 0; lwid = 4; break;
+            case 0xF0: loffs = 1; lwid = 4; break;
+            default:
+                err = 1;
+            }
 
-    wait (26, SC_NS);
+            if (!err)
+                switch (lwid)
+                {
+                case 1:
+                    *((uint8_t *)data + loffs) =
+                        *((uint8_t *)(mem + ofs) + loffs);
+                    break;
+                case 2:
+                    *((uint16_t *)data + loffs) =
+                        *((uint16_t *)(mem + ofs) + loffs);
+                    break;
+                case 4:
+                    *((uint32_t *)data + loffs) =
+                        *((uint32_t *)(mem + ofs) + loffs);
+                    break;
+                default:
+                    err = 1;
+                }
+        }
+
+        if(err == 1)
+        {
+            printf("Bad %s:%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
+                    name(), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
+                    *((uint32_t *)data + 0), *((uint32_t *)data + 1));
+            bErr = true;
+        }
+
+        wait (3, SC_NS);
+    }
 }
 
 void mem_device::rcv_rqst (unsigned long ofs, unsigned char be,

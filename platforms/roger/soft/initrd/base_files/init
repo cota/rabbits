@@ -10,5 +10,8 @@ mknod -m 666 /dev/rabbitsfb c 252 0
 
 modprobe rabbitsfb
 
+export PS1='${PWD}$ '
+
 exec /sbin/init
 #exec /bin/sh
+

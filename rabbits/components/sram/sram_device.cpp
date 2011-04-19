@@ -52,7 +52,7 @@ sram_device::~sram_device()
 }
 
 void 
-sram_device::write(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
+sram_device::write (uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
 {
     int       loffs = 0; /* data offset */
     int       lwid  = 0; /* access width  */
@@ -123,9 +123,8 @@ sram_device::write(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
 }
 
 void
-sram_device::read(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
+sram_device::read (uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
 {
-
     int loffs = 0; /* data offset  */
     int lwid  = 0; /* access width */ 
     int err   = 0;
@@ -133,14 +132,14 @@ sram_device::read(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
     bErr = false;
     wait (1, SC_NS);
 
-    if (ofs > size || be == 0)
+    if (ofs >= size || be == 0)
         err = 1;
 
     if (!err)
     {
         switch (be)
         {
-            //byte access
+        //byte access
         case 0x01: loffs = 0; lwid = 1; break;
         case 0x02: loffs = 1; lwid = 1; break;
         case 0x04: loffs = 2; lwid = 1; break;
@@ -149,75 +148,48 @@ sram_device::read(uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
         case 0x20: loffs = 5; lwid = 1; break;
         case 0x40: loffs = 6; lwid = 1; break;
         case 0x80: loffs = 7; lwid = 1; break;
-            //word access
+        //word access
         case 0x03: loffs = 0; lwid = 2; break;
         case 0x0C: loffs = 1; lwid = 2; break;
         case 0x30: loffs = 2; lwid = 2; break;
         case 0xC0: loffs = 3; lwid = 2; break;
-            //dword access
+        //dword access
         case 0x0F: loffs = 0; lwid = 4; break;
         case 0xF0: loffs = 1; lwid = 4; break;
-            //qword access
+        //qword access
         case 0xFF: loffs = 0; lwid = 8; break;
-
         default:
             err = 1;
         }
 
         if (!err)
+        {
             switch (lwid)
             {
-
-#if 0 /* The value version */
             case 1:
                 *((uint8_t *)data + loffs) =
                     *((uint8_t *)(mem + ofs) + loffs);
                 break;
-
             case 2:
                 *((uint16_t *)data + loffs) =
                     *((uint16_t *)(mem + ofs) + loffs);
                 break;
-
             case 4:
                 *((uint32_t *)data + loffs) =
                     *((uint32_t *)(mem + ofs) + loffs);
                 break;
-
             case 8:
                 *((uint32_t *)data + 0) = *((uint32_t *)(mem + ofs) + 0);
                 *((uint32_t *)data + 1) = *((uint32_t *)(mem + ofs) + 1);
                 break;
-#endif
-
-#if 1 /* The address version */
-            case 1:
-                *(uint32_t *)((uint8_t *)data + loffs) =
-                    (uint32_t)((uint8_t *)(mem + ofs) + loffs);
-                break;
-
-            case 2:
-                *(uint32_t *)((uint16_t *)data + loffs) =
-                    (uint32_t)((uint16_t *)(mem + ofs) + loffs);
-                break;
-
-            case 4:
-                *((uint32_t *)data + loffs) =
-                    (uint32_t)((uint32_t *)(mem + ofs) + loffs);
-                break;
-
-            case 8:
-                *((uint32_t *)data + 0) =
-                    (uint32_t)((uint32_t *)(mem + ofs) + 0);
-                /* *((uint32_t *)data + 1) = *((uint32_t *)(mem + ofs) + 1); */
-                break;
-#endif
             default:
                 err = 1;
             }
+        }
     }
 
-    if(err == 1){
+    if(err == 1)
+    {
         printf("Bad %s:%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
                 name(), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
                 *((uint32_t *)data + 0), *((uint32_t *)data + 1));

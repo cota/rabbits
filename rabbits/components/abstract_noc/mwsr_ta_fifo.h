@@ -39,14 +39,14 @@ private:
     bool IsFull ();
 
 public:
-	sc_event					canRead;
-	sc_event					canWrite;
+    sc_event                    canRead;
+    sc_event                    canWrite;
 
 private:
-    ITEM						*m_data;
-    int							m_size;
-    int							m_idxRead;
-    int							m_idxWrite;
+    ITEM                        *m_data;
+    int                         m_size;
+    int                         m_idxRead;
+    int                         m_idxWrite;
 };
 
 #endif

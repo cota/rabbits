@@ -50,14 +50,14 @@ void interconnect_slave::put (vci_response &rsp)
 
 //get interface
 void interconnect_slave::get (vci_request &req)
-{	
+{
     req = m_queue_requests->Read ();
 }
 
 void interconnect_slave::dispatch_responses_thread ()
 {
-    vci_response			rsp;
-    interconnect_master		*master;
+    vci_response            rsp;
+    interconnect_master     *master;
 
     while (1)
     {

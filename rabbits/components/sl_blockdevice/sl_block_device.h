@@ -35,20 +35,20 @@ enum sl_block_registers {
 };
 
 enum sl_block_op {
-	BLOCK_DEVICE_NOOP,
-	BLOCK_DEVICE_READ,
-	BLOCK_DEVICE_WRITE,
-	BLOCK_DEVICE_FILE_NAME,
+    BLOCK_DEVICE_NOOP,
+    BLOCK_DEVICE_READ,
+    BLOCK_DEVICE_WRITE,
+    BLOCK_DEVICE_FILE_NAME,
 };
 
 enum sl_block_status {
-	BLOCK_DEVICE_IDLE          = 0,
-	BLOCK_DEVICE_BUSY          = 1,
-	BLOCK_DEVICE_READ_SUCCESS  = 2,
-	BLOCK_DEVICE_WRITE_SUCCESS = 3,
-	BLOCK_DEVICE_READ_ERROR    = 4,
-	BLOCK_DEVICE_WRITE_ERROR   = 5,
-	BLOCK_DEVICE_ERROR         = 6,
+    BLOCK_DEVICE_IDLE          = 0,
+    BLOCK_DEVICE_BUSY          = 1,
+    BLOCK_DEVICE_READ_SUCCESS  = 2,
+    BLOCK_DEVICE_WRITE_SUCCESS = 3,
+    BLOCK_DEVICE_READ_ERROR    = 4,
+    BLOCK_DEVICE_WRITE_ERROR   = 5,
+    BLOCK_DEVICE_ERROR         = 6,
 };
 
 
@@ -103,9 +103,9 @@ private:
  * SL_BLOCK_DEVICE_MASTER
  */
 enum sl_block_master_status {
-	MASTER_READY        = 0,
-	MASTER_CMD_SUCCESS  = 1,
-	MASTER_CMD_ERROR    = 2,
+    MASTER_READY        = 0,
+    MASTER_CMD_SUCCESS  = 1,
+    MASTER_CMD_ERROR    = 2,
 };
 
 class sl_block_device_master : public master_device
@@ -118,7 +118,7 @@ public:
     /*
      *   Obtained from father
      *    void send_req(unsigned char tid, unsigned long addr, unsigned char *data, 
-     * 			  unsigned char bytes, bool bWrite);
+     *      unsigned char bytes, bool bWrite);
      */
     virtual void rcv_rsp (unsigned char tid, unsigned char *data,
                           bool bErr, bool bWrite);
@@ -132,8 +132,7 @@ private:
     uint32_t   m_status;
     uint8_t    m_crt_tid;
 
-    uint8_t   *m_tr_rdata;
-    uint32_t   m_tr_addr;
+    uint32_t   m_tr_rdata;
     uint8_t    m_tr_nbytes;
 
 };

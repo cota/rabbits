@@ -17,27 +17,25 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _QEMU_WRAPPER_ACCESS_INTERFACE_
-#define _QEMU_WRAPPER_ACCESS_INTERFACE_
+#ifndef _SYSTEM_INIT_H_
+#define _SYSTEM_INIT_H_
 
-#include <systemc.h>
-
-class qemu_wrapper_access_interface : public sc_interface
+typedef struct
 {
-public:
-    virtual unsigned long get_no_cpus  () = 0;
-    virtual unsigned long get_cpu_fv_level (unsigned long cpu) = 0;
-    virtual void set_cpu_fv_level (unsigned long cpu, unsigned long val) = 0;
-    virtual void generate_swi (unsigned long cpu_mask, unsigned long swi) = 0;
-    virtual void swi_ack (int cpu, unsigned long swi_mask) = 0;
+    const char          *cpu_family;
+    const char          *cpu_model;
+    const char          *kernel_filename;
+    const char          *initrd_filename;
+	 const char         *kernel_cmdline; 
+    int                 no_cpus;
+    int                 ramsize;
+    int                 sramsize;
+    int                 gdb_port;
+} init_struct;
 
-    virtual unsigned long get_cpu_ncycles (unsigned long cpu) = 0;
-    virtual uint64 get_no_cycles_cpu (int cpu) = 0;
-
-    virtual unsigned long get_int_status () = 0;
-    virtual unsigned long get_int_enable () = 0;
-    virtual void set_int_enable (unsigned long val) = 0;
-};
+void parse_cmdline (int argc, char **argv, init_struct *is);
+int check_init (init_struct *is);
+void arm_load_kernel (init_struct *is);
 
 #endif
 

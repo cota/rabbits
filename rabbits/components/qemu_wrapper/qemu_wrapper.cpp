@@ -37,14 +37,14 @@
 #ifdef _DEBUG_WRAPPER_QEMU_
 #define DCOUT cout
 #else
-#define DCOUT if(0) cout
+#define DCOUT if (0) cout
 #endif
 
-#if defined(ENERGY_TRACE_ENABLED) && !defined(ETRACE_NB_CPU_IN_GROUP)
+#if defined (ENERGY_TRACE_ENABLED) && !defined (ETRACE_NB_CPU_IN_GROUP)
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
-#define CPU_TIMEOUT			20000000
+#define CPU_TIMEOUT         20000000
 
 qemu_wrapper                *qemu_wrapper::s_wrappers[20];
 int                         qemu_wrapper::s_nwrappers = 0;
@@ -52,14 +52,14 @@ int                         qemu_wrapper::s_nwrappers = 0;
 extern "C"
 {
 
-    void qemu_wrapper_SLS_banner(void) __attribute__((constructor));
+    void qemu_wrapper_SLS_banner (void) __attribute__ ((constructor));
 
     extern void systemc_qemu_wakeup (qemu_cpu_wrapper_t *_this);
     extern void systemc_qemu_consume_instruction_cycles (
         qemu_cpu_wrapper_t *_this, int ninstr);
     extern void systemc_qemu_consume_ns (unsigned long ns);
     extern unsigned long systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, 
-        unsigned long address, unsigned char nbytes, int bIO);
+        unsigned long address, unsigned long nbytes, int bIO);
     extern void systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, 
         unsigned long address, unsigned long data, unsigned char nbytes, int bIO);
     extern unsigned long long systemc_qemu_get_time ();
@@ -72,8 +72,9 @@ extern "C"
     extern unsigned long    no_cycles_cpu0;
 }
 
-qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterrupts, int *int_cpu_mask, 
-                            int nocpus, int firstcpuindex, const char *cpufamily, const char *cpumodel, int ramsize)
+qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, 
+    int ninterrupts, int *int_cpu_mask, int nocpus, int firstcpuindex,
+    const char *cpufamily, const char *cpumodel, int ramsize)
 : sc_module (name)
 {
     m_ncpu = nocpus;
@@ -85,7 +86,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     s_wrappers[s_nwrappers++] = this;
 
     m_interrupts_raw_status = 0;
-    m_interrupts_enable = 0; // disable all interrputs by default (1 << m_ninterrupts) - 1; //enable all interrupts
+    m_interrupts_enable = 0;
     if (m_ninterrupts)
     {
         interrupt_ports = new sc_in<bool> [m_ninterrupts];
@@ -127,10 +128,11 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     sc_exp_fcs.wait_wb_empty = (wait_wb_empty_fc_t) wait_wb_empty;
     sc_exp_fcs.no_cycles_cpu0 = &no_cycles_cpu0;
 
-    m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu, firstcpuindex, cpumodel,
-                                               ramsize, &m_qemu_import, &sc_exp_fcs);
+    m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu, firstcpuindex, 
+        cpumodel, ramsize, &m_qemu_import, &sc_exp_fcs);
 
-    printf ("QEMU %d has %d %s cpus ([node_id, cpu_id] = ", s_nwrappers - 1, m_ncpu, cpufamily);
+    printf ("QEMU %d has %d %s cpus ([node_id, cpu_id] = ",
+        s_nwrappers - 1, m_ncpu, cpufamily);
     for (int i = 0; i < m_ncpu; i++)
     {
         if (i)
@@ -159,7 +161,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
     m_cpus = new qemu_cpu_wrapper_t * [m_ncpu];
     for (int i = 0; i < m_ncpu; i++)
     {
-        char			*s = new char [50];
+        char            *s = new char [50];
         sprintf (s, "qemu-cpu-%d", i);
         m_cpus[i] = new qemu_cpu_wrapper_t (s, m_qemu_instance,
                                            node + i, i, m_logs, &m_qemu_import);
@@ -178,7 +180,8 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
                 sprintf (etrace_group_name, "CPU %d-%d", i, end_cpu);
         }
         sprintf (buf, "CPU %d", i);
-        periph_id = etrace.add_periph (buf, get_cpu_etrace_class (cpufamily, cpumodel),
+        periph_id = etrace.add_periph (buf,
+            get_cpu_etrace_class (cpufamily, cpumodel),
             etrace_group_id, etrace_group_name);
         m_cpus[i]->set_etrace_periph_id (periph_id);
         #endif
@@ -190,7 +193,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, int ninterru
 
 qemu_wrapper::~qemu_wrapper ()
 {
-    int					i;
+    int                 i;
 
     if (m_qemuLoaded)
         m_qemu_import.qemu_release (m_qemu_instance);
@@ -255,8 +258,10 @@ void qemu_wrapper::timeout_thread ()
 class my_sc_event_or_list : public sc_event_or_list
 {
 public:
-    inline my_sc_event_or_list (const sc_event& e, bool del = false) : sc_event_or_list (e, del) {}
-    inline my_sc_event_or_list& operator | (const sc_event& e){push_back (e);return *this;}
+    inline my_sc_event_or_list (const sc_event& e, bool del = false)
+        : sc_event_or_list (e, del) {}
+    inline my_sc_event_or_list& operator | (const sc_event& e)
+    {push_back (e);return *this;}
 };
 
 void qemu_wrapper::interrupts_thread ()
@@ -404,10 +409,10 @@ unsigned long qemu_wrapper::get_cpu_ncycles (unsigned long cpu)
 
 uint64 qemu_wrapper::get_no_cycles_cpu (int cpu)
 {
-    uint64                      i, ret = 0;
+    uint64                      ret = 0;
     if (cpu == -1)
     {
-        for (i = 0; i < s_nwrappers; i++)
+        for (int i = 0; i < s_nwrappers; i++)
             for (cpu = 0; cpu < s_wrappers[i]->m_ncpu; cpu++)
                 ret += s_wrappers[i]->m_cpus[cpu]->get_no_cycles ();
     }
@@ -447,33 +452,18 @@ void qemu_wrapper::set_int_enable (unsigned long val)
 }
 
 void
-qemu_wrapper::invalidate_address (unsigned long addr, unsigned int node_id)
+qemu_wrapper::invalidate_address (unsigned long addr, int idx_src)
 {
-    int             i, j;
-    qemu_wrapper    *qw;
-
-    for  (i = 0; i < qemu_wrapper::s_nwrappers; i++)
-    {
-        qw = qemu_wrapper::s_wrappers[i];
-        for (j = 0; j < qw->m_ncpu; j++)
-            if (qw->m_cpus[j]->m_node_id == node_id)
-                break;
-        qw->m_qemu_import.qemu_invalidate_address (qw->m_qemu_instance, 
-                                                   addr, j);
-    }
-}
-
-void invalidate_address (unsigned long addr, unsigned int node_id)
-{
-    qemu_wrapper::invalidate_address (addr, node_id);
+    m_qemu_import.qemu_invalidate_address (m_qemu_instance,
+                addr, idx_src);
 }
 
 extern "C"
 {
     void
-    qemu_wrapper_SLS_banner(void)
+    qemu_wrapper_SLS_banner (void)
     {
-        fprintf(stdout,
+        fprintf (stdout,
                 "================================================================================\n"
                 "|  This simulation uses the QEMU/SystemC Wrapper from the RABBITS' framework   |\n"
                 "|                     Copyright (c) 2009 - 2010 Tima SLS                       |\n"

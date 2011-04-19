@@ -261,7 +261,7 @@ sl_block_device::control_thread ()
                 func_ret = master->cmd_read(addr + offset, data_buff + offset, 4);
                 if(!func_ret)
                     break;
-            }       
+            }
     
             if (func_ret)
                 open_host_file ((const char*) data_buff);
@@ -328,68 +328,49 @@ sl_block_device_master::~sl_block_device_master()
 int
 sl_block_device_master::cmd_write (uint32_t addr, uint8_t *data, uint8_t nbytes)
 {
-    uint8_t tid;
-
-    tid = m_crt_tid;
-
     DPRINTF("Write to %x [0x%08x]\n", addr, *(uint32_t *)data);
 
-    send_req(tid, addr, data, nbytes, 1);
+    send_req (m_crt_tid, addr, data, nbytes, 1);
 
-    wait(ev_cmd_done);
+    wait (ev_cmd_done);
 
     if(m_status != MASTER_CMD_SUCCESS)
         return 0;
-    else
-        return 1;
+    
+    return 1;
 }
 
 int
 sl_block_device_master::cmd_read (uint32_t addr, uint8_t *data, uint8_t nbytes)
 {
-    uint8_t  tid;
-    int i = 0;
-
-    tid = m_crt_tid;
-
-    m_tr_addr   = addr;
     m_tr_nbytes = nbytes;
-    m_tr_rdata  = NULL;
+    m_tr_rdata  = 0;
 
-    DPRINTF("Read from %x\n", addr);
+    DPRINTF ("Read from %x\n", addr);
 
-    send_req(tid, addr, (unsigned char *) &m_tr_rdata, nbytes, 0);
+    send_req (m_crt_tid, addr, NULL, nbytes, 0);
 
-    wait(ev_cmd_done);
+    wait (ev_cmd_done);
 
-    if(m_tr_rdata)
-    {
-        for( i = 0; i < nbytes; i++)
-            data[i] = m_tr_rdata[i];
-    }
+    for (int i = 0; i < nbytes; i++)
+        data[i] = ((unsigned char *) &m_tr_rdata)[i];
 
-    if( m_tr_rdata )
-        DPRINTF("Read val: [0x%08x]\n", *(uint32_t *)data);
-    else
-        DPRINTF("Read NULL\n");
-
-    if(m_status != MASTER_CMD_SUCCESS)
+    if (m_status != MASTER_CMD_SUCCESS)
         return 0;
-    else
-        return 1;
+
+    return 1;
 }
 
 void 
-sl_block_device_master::rcv_rsp(uint8_t tid, uint8_t *data,
+sl_block_device_master::rcv_rsp (uint8_t tid, uint8_t *data,
                                 bool bErr, bool bWrite)
 {
-    int i = 0;
-
-    if(tid != m_crt_tid)
+    if (tid != m_crt_tid)
     {
-        EPRINTF("Bad tid (%d / %d)\n", tid, m_crt_tid);
+        EPRINTF ("Bad tid (%d / %d)\n", tid, m_crt_tid);
     }
-    if(bErr)
+
+    if (bErr)
     {
         DPRINTF("Cmd KO\n");
         m_status = MASTER_CMD_ERROR;
@@ -400,43 +381,36 @@ sl_block_device_master::rcv_rsp(uint8_t tid, uint8_t *data,
         m_status = MASTER_CMD_SUCCESS;
     }
 
-    if(!bWrite)
+    if (!bWrite)
     {
-        /* DPRINTF("Got data: 0x%08x - 0x%08x\n",  */
-        /*         *((uint32_t *)data + 0), *((uint32_t *)data + 1)); */
-        m_tr_rdata = *((uint8_t **)data);
+        for (int i = 0; i < m_tr_nbytes; i++)
+            ((unsigned char *) &m_tr_rdata)[i] = data[i];
     }
     m_crt_tid++;
 
-    ev_cmd_done.notify();
-
-    return;
+    ev_cmd_done.notify ();
 }
 
 /*
  * sl_block_device_slave
  */
 sl_block_device_slave::sl_block_device_slave (const char *_name,
-                                              sl_block_device_CSregs_t *cs_regs,
-                                              sc_event *op_start, sc_event *irq_update)
-: slave_device (_name)
+    sl_block_device_CSregs_t *cs_regs, sc_event *op_start, sc_event *irq_update)
+    : slave_device (_name)
 {
-
     m_cs_regs     = cs_regs;
     ev_op_start   = op_start;
     ev_irq_update = irq_update;
-
 }
 
 sl_block_device_slave::~sl_block_device_slave()
 {
-
 }
 
 void sl_block_device_slave::write (unsigned long ofs, unsigned char be,
-                                    unsigned char *data, bool &bErr)
+                                   unsigned char *data, bool &bErr)
 {
-    uint32_t  *val = (uint32_t *)data;
+    uint32_t  *val = (uint32_t *) data;
     uint32_t   lofs = ofs;
     uint8_t    lbe  = be;
 
@@ -452,7 +426,6 @@ void sl_block_device_slave::write (unsigned long ofs, unsigned char be,
 
     switch(lofs)
     {
-
     case BLOCK_DEVICE_BUFFER     :
         DPRINTF("BLOCK_DEVICE_BUFFER write: %x\n", *val);
         m_cs_regs->m_buffer = *val;
@@ -487,7 +460,6 @@ void sl_block_device_slave::write (unsigned long ofs, unsigned char be,
         EPRINTF("Bad %s::%s ofs=0x%X, be=0x%X\n", name (), __FUNCTION__,
                 (unsigned int) ofs, (unsigned int) be);
     }
-    return;
 }
 
 void sl_block_device_slave::read (unsigned long ofs, unsigned char be,
@@ -510,7 +482,6 @@ void sl_block_device_slave::read (unsigned long ofs, unsigned char be,
 
     switch(lofs)
     {
-
     case BLOCK_DEVICE_BUFFER     :
         *val = m_cs_regs->m_buffer;
         DPRINTF("BLOCK_DEVICE_BUFFER read: %x\n", *val);
@@ -553,7 +524,6 @@ void sl_block_device_slave::read (unsigned long ofs, unsigned char be,
         EPRINTF("Bad %s::%s ofs=0x%X, be=0x%X\n", name (), __FUNCTION__,
                 (unsigned int) ofs, (unsigned int) be);
     }
-    return;
 }
 
 void sl_block_device_slave::rcv_rqst (unsigned long ofs, unsigned char be,

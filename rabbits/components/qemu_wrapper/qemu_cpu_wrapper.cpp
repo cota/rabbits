@@ -46,14 +46,14 @@ static unsigned long                        s_addr_startup_secondary = 0xFFFFFFF
 //#define COUT_TIMES cout
 #define COUT_TIMES if(0) cout
 
-#define EXCP_INTERRUPT		0x10000		/* async interruption */
-#define EXCP_HLT			0x10001		/* hlt instruction reached */
-#define EXCP_DEBUG			0x10002		/* cpu stopped after a breakpoint or singlestep */
-#define EXCP_HALTED			0x10003		/* cpu is halted (waiting for external event) */
-#define EXCP_POWER_DOWN		0x10004 
-#define EXCP_RESET			0x10005
-#define EXCP_SHUTDOWN		0x10006
-#define EXCP_VM_NOT_RUNNING	0x10007
+#define EXCP_INTERRUPT      0x10000     /* async interruption */
+#define EXCP_HLT            0x10001     /* hlt instruction reached */
+#define EXCP_DEBUG          0x10002     /* cpu stopped after a breakpoint or singlestep */
+#define EXCP_HALTED         0x10003     /* cpu is halted (waiting for external event) */
+#define EXCP_POWER_DOWN     0x10004 
+#define EXCP_RESET          0x10005
+#define EXCP_SHUTDOWN       0x10006
+#define EXCP_VM_NOT_RUNNING 0x10007
 
 static struct timeval                   start_time;
 
@@ -102,12 +102,12 @@ void qemu_cpu_wrapper::set_unblocking_write (bool val)
 
 void qemu_cpu_wrapper::consume_instruction_cycles_with_sync (unsigned long ncycles)
 {
-    uint64				ps_start_time;
-    double				cycles_done;
-    double				start_fv_percent;
+    uint64              ps_start_time;
+    double              cycles_done;
+    double              start_fv_percent;
     unsigned long       start_fv_level;
-    uint64				start_no_cycles;
-    uint64				ps_time_passed;
+    uint64              start_no_cycles;
+    uint64              ps_time_passed;
     double              cycles = ncycles;
     bool                bIdle = false;
 
@@ -143,7 +143,7 @@ void qemu_cpu_wrapper::consume_instruction_cycles_with_sync (unsigned long ncycl
 
 void qemu_cpu_wrapper::cpu_thread ()
 {
-    int					hr;
+    int                 hr;
 
     while (1)
     {
@@ -156,7 +156,7 @@ void qemu_cpu_wrapper::cpu_thread ()
         case EXCP_HLT:
         case EXCP_HALTED:
         {
-            uint64				ps_start_time = sc_time_stamp ().value ();
+            uint64      ps_start_time = sc_time_stamp ().value ();
 
             #ifdef ENERGY_TRACE_ENABLED
             etrace.change_energy_mode (m_etrace_periph_id, ETRACE_MODE(ETRACE_CPU_IDLE, m_fv_level));
@@ -242,9 +242,9 @@ uint64 qemu_cpu_wrapper::get_no_cycles ()
 
 
 unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
-    unsigned long addr, unsigned char nbytes, int bIO)
+    unsigned long addr, unsigned long nbytes, int bIO)
 {
-    unsigned long			val;
+    unsigned long           val;
 
     if (addr >= m_base_address && addr <= m_end_address)
     {
@@ -540,8 +540,8 @@ void qemu_cpu_wrapper::set_etrace_periph_id (unsigned long id)
 }
 #endif
 
-void qemu_cpu_wrapper::rcv_rsp(unsigned char tid, unsigned char *data,
-                               bool bErr, bool bWrite)
+void qemu_cpu_wrapper::rcv_rsp (unsigned char tid, unsigned char *data,
+                                bool bErr, bool bWrite)
 {
 
     qemu_wrapper_request            *localrq;
@@ -562,22 +562,17 @@ void qemu_cpu_wrapper::rcv_rsp(unsigned char tid, unsigned char *data,
         return;
     }
 
-    localrq->low_word = *((unsigned long *)data + 0);
-    localrq->high_word = *((unsigned long *)data + 1);
+    localrq->rcv_data = * (unsigned long *) data;
     localrq->bDone = 1;
     localrq->evDone.notify ();
-
-    return;
 }
 
 unsigned long qemu_cpu_wrapper::read (unsigned long addr,
-                                      unsigned char nbytes, int bIO)
+                                      unsigned long nbytes, int bIO)
 {
-    unsigned char           adata[8];
     unsigned long           ret;
     int                     i;
-    unsigned char           tid;
-    qemu_wrapper_request   *localrq;
+    qemu_wrapper_request    *localrq;
 
     if (m_unblocking_write)
         localrq = m_rqs->GetNewRequest (1);
@@ -588,21 +583,18 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
         return -2;
 
     localrq->bWrite = 0;
-    tid = localrq->tid;
 
-    send_req(tid, addr, adata, nbytes, 0);
+    send_req (localrq->tid, addr, NULL, nbytes, 0);
 
     while (!localrq->bDone)
         wait (localrq->evDone);
 
-    *((unsigned long *) adata + 0) = localrq->low_word;
-    *((unsigned long *) adata + 1) = localrq->high_word;
+    if (nbytes > 4)
+        nbytes = 4;
+    for (i = 0; i < nbytes; i++)
+        ((unsigned char *) &ret)[i] = ((unsigned char *) &localrq->rcv_data)[i];
 
     m_rqs->FreeRequest (localrq);
-
-    for (i = 0; i < nbytes; i++)
-        *((unsigned char *) &ret + i) = adata[i];
-
 
     return ret;
 }
@@ -673,7 +665,7 @@ extern "C"
 
     unsigned long
     systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
-                              unsigned char nbytes, int bIO)
+                              unsigned long nbytes, int bIO)
     {
         unsigned long                   ret;
         unsigned long long              diff, starttime = sc_time_stamp ().value ();

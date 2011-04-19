@@ -47,7 +47,7 @@ public:
     void set_unblocking_write (bool val);
     //qemu interface
     unsigned long systemc_qemu_read_memory (unsigned long address,
-                                            unsigned char nbytes, int bIO);
+                                            unsigned long nbytes, int bIO);
     void systemc_qemu_write_memory (unsigned long address, unsigned long data,
                                     unsigned char nbytes, int bIO);
     void consume_instruction_cycles_with_sync (unsigned long ns);
@@ -70,7 +70,7 @@ private:
 
 private:
     //local functions
-    unsigned long read (unsigned long address, unsigned char nbytes, int bIO);
+    unsigned long read (unsigned long address, unsigned long nbytes, int bIO);
     void write (unsigned long address, unsigned long data,
                 unsigned char nbytes, int bIO);
     /* long blocking_raw_read (unsigned long addr8Balgn, unsigned char be, */
@@ -101,14 +101,14 @@ private:
     qemu_import_t                           *m_qemu_import;
 
     //tmp regs
-    uint64									m_last_read_sctime;
+    uint64                                  m_last_read_sctime;
     unsigned long                           m_last_no_cycles_high;
 
     //counters
-    uint64									m_no_total_cycles;
+    uint64                                  m_no_total_cycles;
 
     //log
-    cpu_logs								*m_logs;
+    cpu_logs                                *m_logs;
 
     #ifdef ENERGY_TRACE_ENABLED
     //etrace
@@ -116,8 +116,7 @@ private:
     #endif
 
 public:
-    int								        m_cpuindex;
-    //    unsigned int                      m_node_id;
+    int                                     m_cpuindex;
     unsigned long                           m_crt_cpu_thread;
     unsigned long                           m_swi;
  

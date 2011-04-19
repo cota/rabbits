@@ -25,16 +25,17 @@
 
 typedef struct
 {
-    int								slave_id;
-    unsigned long					begin_address;
-    unsigned long					end_address;
+    int                             slave_id;
+    unsigned long                   begin_address;
+    unsigned long                   end_address;
     unsigned long                   intern_offset;
 } interconnect_master_map_el;
 
 template <typename ITEM>
 class mwsr_ta_fifo;
 
-class interconnect_master : public sc_module, public VCI_PUT_REQ_IF, public VCI_GET_RSP_IF
+class interconnect_master :
+    public sc_module, public VCI_PUT_REQ_IF, public VCI_GET_RSP_IF
 {
 public:
     SC_HAS_PROCESS (interconnect_master);
@@ -53,6 +54,26 @@ public:
         m_queue_responses->Write (rsp);
     }
 
+    inline int get_liniar_address (
+        int slave_id, unsigned long offset_slave, unsigned long &addr)
+    {
+        interconnect_master_map_el      *map;
+        int                             i;
+
+        for (i = 0; i < m_nmap; i++)
+        {
+            map = &m_map[i];
+            if (map->slave_id == slave_id)
+            {
+                addr = map->begin_address + offset_slave - map->intern_offset;
+                if (addr >= map->begin_address && addr < map->end_address)
+                    return 1;
+            }
+        }
+
+        return 0;
+    }
+
     inline int get_slave_id_for_mem_addr (unsigned long &addr)
     {
         interconnect_master_map_el      *map;
@@ -68,7 +89,8 @@ public:
             }
         }
 
-        printf ("Error: 0x%lx bad address required in %s!\n", addr, __FUNCTION__);
+        printf ("Error: 0x%lx bad address required in %s!\n",
+            addr, __FUNCTION__);
         return -1;
     }
 
@@ -77,12 +99,12 @@ private:
     void dispatch_requests_thread ();
 
 public:
-    int								m_srcid;
-    interconnect					*m_parent;
-    int								m_nmap;
-    interconnect_master_map_el		*m_map;
-    mwsr_ta_fifo<vci_response>		*m_queue_responses;
-    mwsr_ta_fifo<vci_request>		*m_queue_requests;
+    int                                 m_srcid;
+    interconnect                        *m_parent;
+    int                                 m_nmap;
+    interconnect_master_map_el          *m_map;
+    mwsr_ta_fifo<vci_response>          *m_queue_responses;
+    mwsr_ta_fifo<vci_request>           *m_queue_requests;
 };
 
 #endif

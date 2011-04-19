@@ -43,7 +43,7 @@ public:
 
     //inline qemu_cpu_wrapper <stbus_bca_request<64>, stbus_bca_response<64> > * get_cpu (int i) {return m_cpus[i];}
     inline qemu_cpu_wrapper_t * get_cpu (int i) {return m_cpus[i];}
-    static void invalidate_address (unsigned long addr, unsigned int node_id);
+    void invalidate_address (unsigned long addr, int idx_src);
 
     //qemu_wrapper_access_interface
     virtual unsigned long get_no_cpus  ();
@@ -72,6 +72,9 @@ public:
     static qemu_wrapper                 *s_wrappers[20];
     static int                           s_nwrappers;
 
+    int                                 m_ncpu;
+    qemu_cpu_wrapper_t                  **m_cpus;
+
 private:
     // attr
     unsigned long                       *m_cpu_interrupts_raw_status;
@@ -84,9 +87,7 @@ private:
 
     int                                 m_ninterrupts;
     bool                                m_qemuLoaded;
-    int                                 m_ncpu;
     int                                 m_firstcpuindex;
-    qemu_cpu_wrapper_t                **m_cpus;
 
     cpu_logs                            *m_logs;
 };

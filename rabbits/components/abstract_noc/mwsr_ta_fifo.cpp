@@ -43,7 +43,7 @@ ITEM& mwsr_ta_fifo<ITEM>::Read ()
         wait(canRead);
     }
 
-    int				pos = m_idxRead;
+    int             pos = m_idxRead;
     m_idxRead = (m_idxRead + 1) % m_size;
 
     canWrite.notify();

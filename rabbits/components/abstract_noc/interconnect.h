@@ -56,10 +56,10 @@ private:
     void internal_init ();
 
 protected:
-    int									m_nMasters;
-    interconnect_master					**m_masters;
-    int									m_nSlaves;
-    interconnect_slave					**m_slaves;
+    int                                 m_nMasters;
+    interconnect_master                 **m_masters;
+    int                                 m_nSlaves;
+    interconnect_slave                  **m_slaves;
 };
 
 #endif

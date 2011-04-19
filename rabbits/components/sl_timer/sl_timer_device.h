@@ -31,8 +31,8 @@ enum sl_timer_registers {
 };
 
 enum sl_timer_mode {
-	TIMER_RUNNING = 1,
-	TIMER_IRQ_ENABLED = 2,
+    TIMER_RUNNING = 1,
+    TIMER_IRQ_ENABLED = 2,
 };
 
 

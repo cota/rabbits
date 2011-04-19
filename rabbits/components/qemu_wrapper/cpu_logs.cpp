@@ -113,7 +113,7 @@ void close_chrono_cpu_fvs ()
 
 void cpu_logs::internal_init ()
 {
-    int					i, cpu;
+    int         i, cpu;
 
     m_ns_time_at_fv         = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
     m_ns_time_at_fv_prev    = new unsigned long long [m_ncpu * m_cpu_nb_fv_levels_1];
@@ -141,8 +141,8 @@ void cpu_logs::internal_init ()
         printf ("Cannot open log %s", FILE_TIME_AT_FV);
         exit (1);
     }
-    tm				ct;
-    time_t			tt;
+    tm              ct;
+    time_t          tt;
     time (&tt);
     localtime_r (&tt, &ct);
     fprintf (file_fv, "\nSimulation start time=\t%02d-%02d-%04d %02d:%02d:%02d\n",
@@ -154,10 +154,10 @@ void cpu_logs::internal_init ()
 
     #ifdef TIME_AT_FV_LOG_GRF
     //"time at fv" grf
-    int					apipe[2] = {0, 0};
-    char				*ps, s[100];
-    unsigned long		val;
-    long long			vall;
+    int                 apipe[2] = {0, 0};
+    char                *ps, s[100];
+    unsigned long       val;
+    long long           vall;
 
     pipe (apipe);
     if ((m_pid_grf_run_at_fv = fork()) == 0)
@@ -169,7 +169,7 @@ void cpu_logs::internal_init ()
         close (apipe[0]);
         close (apipe[1]);
 
-        int			fdnull = open ("/dev/null", O_WRONLY);
+        int             fdnull = open ("/dev/null", O_WRONLY);
         close (1);
         dup2 (1, fdnull);
 //        close (2);
@@ -239,10 +239,10 @@ void cpu_logs::add_time_at_fv (int cpu, int fv_level, unsigned long long time)
 
 unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
 {
-    unsigned long		ret;
+    unsigned long           ret;
     if (m_hword_ncycles[cpu] == (unsigned long)-1)
     {
-        unsigned long long	sum = 0;
+        unsigned long long  sum = 0;
         for (int i = 0; i < m_cpu_nb_fv_levels_1; i++)
             sum += (unsigned long long) (macro_ns_time_at_fv[cpu][i] * 
                 m_cpu_fv_percents[i] * m_cycles_max_fv_per_ns);
@@ -260,11 +260,11 @@ unsigned long cpu_logs::get_cpu_ncycles (unsigned long cpu)
 
 void cpu_logs::update_fv_grf ()
 {
-    int						i, cpu;
+    int                     i, cpu;
 
     #ifdef TIME_AT_FV_LOG_FILE
     //"time at fv" file
-    static int			cnt1 = 0;
+    static int              cnt1 = 0;
     if (++cnt1 == 100)
     {
         cnt1 = 0;
@@ -278,15 +278,15 @@ void cpu_logs::update_fv_grf ()
                     macro_ns_time_at_fv[cpu][m_cpu_nb_fv_levels_1 - 1 - i] / 1000);
             fprintf (file_fv, "\n");
         }
-    }	
+    }
     #endif
 
     #ifdef TIME_AT_FV_LOG_GRF
     //"time at fv" grf
     if (m_pipe_grf_run_at_fv)
     {
-        double					s1, s2, diff;
-        unsigned char			val[32];
+        double                  s1, s2, diff;
+        unsigned char           val[32];
         for (cpu = m_ncpu - 1; cpu >= 0; cpu--)
         {
             val[cpu] = 0;

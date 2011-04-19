@@ -19,7 +19,8 @@
 
 #include <slave_device.h>
 
-void invalidate_address (unsigned long addr, unsigned int node_id);
+void invalidate_address (unsigned long addr, int slave_id,
+        unsigned long offset_slave, int src_id);
 
 slave_device::slave_device (sc_module_name module_name) : sc_module (module_name)
 {
@@ -77,7 +78,8 @@ void
 slave_device::send_rsp (bool bErr)
 {
     if (m_write_invalidate && m_req.cmd == CMD_WRITE)
-        invalidate_address (m_req.initial_address, m_req.srcid);
+        invalidate_address (m_req.initial_address,
+            m_req.slave_id, m_req.initial_address, m_req.srcid);
 
     m_rsp.rerror = bErr;
     put_port->put (m_rsp);

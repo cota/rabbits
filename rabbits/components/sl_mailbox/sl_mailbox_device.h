@@ -23,11 +23,11 @@
 #include <slave_device.h>
 
 enum sl_mailbox_registers {
-    MAILBOX_COMM_ADR	= 0,
-    MAILBOX_DATA_ADR	= 1,
-    // free addr	= 2
-    MAILBOX_RESET_ADR	= 3,
-    MAILBOX_SPAN    	= 4,
+    MAILBOX_COMM_ADR    = 0,
+    MAILBOX_DATA_ADR    = 1,
+    // free addr    = 2
+    MAILBOX_RESET_ADR   = 3,
+    MAILBOX_SPAN        = 4,
 };
 
 enum sl_mailbox_status_register{

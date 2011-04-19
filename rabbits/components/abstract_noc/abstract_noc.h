@@ -44,7 +44,6 @@ namespace noc
     {
     public:
         uint32_t    address;
-        uint32_t    initial_address;
         uint8_t     be;
         uint8_t     cmd;
         bool        contig;
@@ -57,7 +56,10 @@ namespace noc
         bool        clen;
         uint16_t    srcid;
         uint8_t     trdid;
-        uint8_t     pktid;  
+        uint8_t     pktid;
+
+        uint32_t    initial_address;
+        int         slave_id;
     };
     enum {
         CMD_NOP,

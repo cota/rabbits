@@ -158,9 +158,9 @@ private:
  * FB_DEVICE_MASTER
  */
 enum fb_device_master_status {
-	FB_MASTER_READY        = 0,
-	FB_MASTER_CMD_SUCCESS  = 1,
-	FB_MASTER_CMD_ERROR    = 2,
+    FB_MASTER_READY        = 0,
+    FB_MASTER_CMD_SUCCESS  = 1,
+    FB_MASTER_CMD_ERROR    = 2,
 };
 
 class fb_device_master : public master_device
@@ -173,7 +173,7 @@ public:
     /*
      *   Obtained from father
      *    void send_req(unsigned char tid, unsigned long addr, unsigned char *data, 
-     * 			  unsigned char bytes, bool bWrite);
+     *      unsigned char bytes, bool bWrite);
      */
     virtual void rcv_rsp (unsigned char tid, unsigned char *data,
                           bool bErr, bool bWrite);
@@ -187,8 +187,7 @@ private:
     uint32_t   m_status;
     uint8_t    m_crt_tid;
 
-    uint8_t   *m_tr_rdata;
-    uint32_t   m_tr_addr;
+    uint32_t   m_tr_rdata;
     uint8_t    m_tr_nbytes;
 
 };

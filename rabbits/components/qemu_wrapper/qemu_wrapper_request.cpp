@@ -36,7 +36,7 @@ qemu_wrapper_requests::qemu_wrapper_requests (int count)
     m_headFree = NULL;
     m_headBusy = NULL;
 
-    qemu_wrapper_request		**pp = &m_headFree;
+    qemu_wrapper_request        **pp = &m_headFree;
     for (int i = 0; i < count; i++)
     {
         *pp = new qemu_wrapper_request (i + 1);
@@ -46,7 +46,7 @@ qemu_wrapper_requests::qemu_wrapper_requests (int count)
 
 qemu_wrapper_requests::~qemu_wrapper_requests ()
 {
-    qemu_wrapper_request		*p;
+    qemu_wrapper_request        *p;
 
     while (m_headFree)
     {
@@ -67,7 +67,7 @@ qemu_wrapper_request* qemu_wrapper_requests::GetNewRequest (int bWaitEmpty)
     while (bWaitEmpty && m_headBusy)
         wait (m_evEmpty);
 
-    qemu_wrapper_request	*p = m_headFree;
+    qemu_wrapper_request        *p = m_headFree;
 
     if (!p)
     {
@@ -80,15 +80,14 @@ qemu_wrapper_request* qemu_wrapper_requests::GetNewRequest (int bWaitEmpty)
     m_headBusy = p;
 
     p->bDone = 0;
-    p->low_word = 0xDEADDEAD;
-    p->high_word = 0xDEADDEAD;
+    p->rcv_data = 0xDEADDEAD;
 
     return p;
 }
 
 qemu_wrapper_request* qemu_wrapper_requests::GetRequestByTid (unsigned char tid)
 {
-    qemu_wrapper_request	*p = m_headBusy;
+    qemu_wrapper_request        *p = m_headBusy;
 
     while (p && p->tid != tid)
         p = p->m_next;
@@ -98,7 +97,7 @@ qemu_wrapper_request* qemu_wrapper_requests::GetRequestByTid (unsigned char tid)
 
 void qemu_wrapper_requests::FreeRequest (qemu_wrapper_request *rq)
 {
-    qemu_wrapper_request	**pp = &m_headBusy;
+    qemu_wrapper_request        **pp = &m_headBusy;
 
     while (*pp && *pp != rq)
         pp = &(*pp)->m_next;

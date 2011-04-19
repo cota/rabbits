@@ -110,7 +110,7 @@ public:
     void master_request();
     void master_response();
 
-	void irq_update_thread();
+    void irq_update_thread();
 
 public:
     //ports
@@ -125,7 +125,7 @@ private:
     //members
     sc_event                                    m_ev_response;
     sc_event                                    m_ev_irqupdate;
-	uint32_t                                    m_irq_stat;
+    uint32_t                                    m_irq_stat;
 
     vci_response                                m_response;
     vci_request                                 m_request;

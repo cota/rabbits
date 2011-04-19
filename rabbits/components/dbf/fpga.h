@@ -25,12 +25,12 @@
 #define FRAME_OFFSET   0x40000
 #define SLICE_OFFSET   0x10
 
-#define LUMA_OFFSET    0x0	/* from 0x00000 to 0x000FF */
-#define CHROMA_OFFSET  0x00100	/* from 0x00100 to 0x0017F */
-#define MVX_OFFSET     0x00180	/* from 0x00180 to 0x0019F */
-#define MVY_OFFSET     0x001A0	/* from 0x001A0 to 0x001BF */
-#define COEFF_OFFSET   0x001C0	/* from 0x001C0 to 0x001CF */
-#define QUANT_OFFSET   0x001D0	/* from 00x01D0 to 0x001D1 */
+#define LUMA_OFFSET    0x0      /* from 0x00000 to 0x000FF */
+#define CHROMA_OFFSET  0x00100  /* from 0x00100 to 0x0017F */
+#define MVX_OFFSET     0x00180  /* from 0x00180 to 0x0019F */
+#define MVY_OFFSET     0x001A0  /* from 0x001A0 to 0x001BF */
+#define COEFF_OFFSET   0x001C0  /* from 0x001C0 to 0x001CF */
+#define QUANT_OFFSET   0x001D0  /* from 00x01D0 to 0x001D1 */
 #define MODE_OFFSET    0x001D2
 
 #define REG_GLO_VER    0x34000

@@ -102,8 +102,8 @@ public:
     void change_energy_mode (unsigned long periph_id, unsigned long mode);
     void energy_event (unsigned long periph_id, unsigned long event_id, unsigned long value);
 
-	void start_measure (void);
-	unsigned long stop_measure (void);
+    void start_measure (void);
+    unsigned long stop_measure (void);
 
 private:
     void display_init (void);

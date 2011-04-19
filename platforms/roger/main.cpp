@@ -163,6 +163,33 @@ int sc_main (int argc, char ** argv)
     return 0;
 }
 
+void invalidate_address (unsigned long addr, int slave_id, 
+        unsigned long offset_slave, int src_id)
+{
+    int                 i, first_node_id;
+    unsigned long       taddr;
+    qemu_wrapper        *qw;
+
+    for  (i = 0; i < qemu_wrapper::s_nwrappers; i++)
+    {
+        qw = qemu_wrapper::s_wrappers[i];
+        first_node_id = qw->m_cpus[0]->m_node_id;
+
+        if (src_id >= first_node_id && src_id < first_node_id + qw->m_ncpu)
+        {
+            qw->invalidate_address (addr, src_id - first_node_id);
+        }
+        else
+        {
+            if (onoc->get_master (first_node_id)->get_liniar_address (
+                    slave_id, offset_slave, taddr))
+            {
+                qw->invalidate_address (taddr, -1);
+            }
+        }
+    }
+}
+
 int systemc_load_image (const char *file, unsigned long ofs)
 {
     if (file == NULL)

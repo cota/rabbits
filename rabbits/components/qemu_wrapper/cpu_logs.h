@@ -39,14 +39,14 @@ protected:
     void internal_init ();
 
 protected:
-    int					m_ncpu;
-    unsigned long long	*m_ns_time_at_fv;
-    unsigned long long	*m_ns_time_at_fv_prev;
+    int                 m_ncpu;
+    unsigned long long  *m_ns_time_at_fv;
+    unsigned long long  *m_ns_time_at_fv_prev;
     unsigned long long  *m_ns_time_at_fv_measure;
-    unsigned long		*m_hword_ncycles;
-    FILE				*file_fv;
-    int					m_pipe_grf_run_at_fv;
-    int					m_pid_grf_run_at_fv;
+    unsigned long       *m_hword_ncycles;
+    FILE                *file_fv;
+    int                 m_pipe_grf_run_at_fv;
+    int                 m_pid_grf_run_at_fv;
     int                 m_cpu_nb_fv_levels_1;
 
 public:

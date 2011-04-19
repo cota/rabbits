@@ -33,7 +33,7 @@ interconnect::interconnect (sc_module_name name, int nmasters, int nslaves)
 
 interconnect::~interconnect ()
 {
-    int				i;
+    int             i;
     if (m_masters)
     {
         for (i = 0; i < m_nMasters; i++)
@@ -50,8 +50,8 @@ interconnect::~interconnect ()
 
 void interconnect::internal_init ()
 {
-    int				i;
-    char			s[50];
+    int             i;
+    char            s[50];
 
     m_masters = new interconnect_master* [m_nMasters];
     for (i = 0; i < m_nMasters; i++)
@@ -65,7 +65,7 @@ void interconnect::internal_init ()
     {
         sprintf (s, "NOC_slave_%02d", i);
         m_slaves[i] = new interconnect_slave (s, this, i);
-    }	
+    }
 }
 
 void interconnect::connect_master_64 (int devid, sc_port<VCI_PUT_REQ_IF> &putp, 
