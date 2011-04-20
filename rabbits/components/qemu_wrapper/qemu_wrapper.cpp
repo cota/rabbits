@@ -73,12 +73,11 @@ extern "C"
 }
 
 qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node, 
-    int ninterrupts, int *int_cpu_mask, int nocpus, int firstcpuindex,
+    int ninterrupts, int *int_cpu_mask, int nocpus,
     const char *cpufamily, const char *cpumodel, int ramsize)
 : sc_module (name)
 {
     m_ncpu = nocpus;
-    m_firstcpuindex = firstcpuindex;
     m_qemuLoaded = false;
     m_ninterrupts = ninterrupts;
     interrupt_ports = NULL;
@@ -107,7 +106,8 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node,
     m_qemu_import.qemu_init = (qemu_init_fc_t) dlsym (m_lib_handle, buf);
     if (!m_qemu_import.qemu_init)
     {
-        printf ("Cannot load qemu_init symbol from library %s in %s\n", buf, __FUNCTION__);
+        printf ("Cannot load %s symbol from library libqemu-system-%s.so in %s\n",
+            buf, cpufamily, __FUNCTION__);
         exit (1);
     }
 
@@ -128,7 +128,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node,
     sc_exp_fcs.wait_wb_empty = (wait_wb_empty_fc_t) wait_wb_empty;
     sc_exp_fcs.no_cycles_cpu0 = &no_cycles_cpu0;
 
-    m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu, firstcpuindex, 
+    m_qemu_instance = m_qemu_import.qemu_init (node, m_ncpu,
         cpumodel, ramsize, &m_qemu_import, &sc_exp_fcs);
 
     printf ("QEMU %d has %d %s cpus ([node_id, cpu_id] = ",
@@ -137,7 +137,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node,
     {
         if (i)
             printf (", ");
-        printf ("[%d, %d]", node + i, firstcpuindex + i);
+        printf ("[%d, %d]", node + i, i);
     }
     printf (")\n");
     m_qemuLoaded = true;
@@ -359,7 +359,7 @@ unsigned long qemu_wrapper::get_no_cpus  ()
 
 unsigned long qemu_wrapper::get_cpu_fv_level (unsigned long cpu)
 {
-    return m_cpus[cpu - m_firstcpuindex]->get_cpu_fv_level ();
+    return m_cpus[cpu]->get_cpu_fv_level ();
 }
 
 void qemu_wrapper::set_cpu_fv_level (unsigned long cpu, unsigned long val)
@@ -370,7 +370,7 @@ void qemu_wrapper::set_cpu_fv_level (unsigned long cpu, unsigned long val)
             m_cpus[cpu]->set_cpu_fv_level (val);
     }
     else
-        m_cpus[cpu - m_firstcpuindex]->set_cpu_fv_level (val);
+        m_cpus[cpu]->set_cpu_fv_level (val);
 }
 
 void qemu_wrapper::generate_swi (unsigned long cpu_mask, unsigned long swi)
@@ -404,7 +404,7 @@ void qemu_wrapper::swi_ack (int cpu, unsigned long swi_mask)
 
 unsigned long qemu_wrapper::get_cpu_ncycles (unsigned long cpu)
 {
-    return m_cpus[cpu - m_firstcpuindex]->get_cpu_ncycles ();
+    return m_cpus[cpu]->get_cpu_ncycles ();
 }
 
 uint64 qemu_wrapper::get_no_cycles_cpu (int cpu)
@@ -417,7 +417,7 @@ uint64 qemu_wrapper::get_no_cycles_cpu (int cpu)
                 ret += s_wrappers[i]->m_cpus[cpu]->get_no_cycles ();
     }
     else
-        ret = m_cpus[cpu - m_firstcpuindex]->get_no_cycles ();
+        ret = m_cpus[cpu]->get_no_cycles ();
 
     return ret;
 }

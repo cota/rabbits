@@ -33,7 +33,7 @@ class qemu_wrapper : public sc_module, public qemu_wrapper_access_interface
 public:
     SC_HAS_PROCESS (qemu_wrapper);
     qemu_wrapper (sc_module_name name, unsigned int node, int ninterrupts, int *int_cpu_mask,
-                  int nocpus, int firstcpuindex, const char *cpufamily, const char *cpumodel, int ramsize);
+                  int nocpus, const char *cpufamily, const char *cpumodel, int ramsize);
     ~qemu_wrapper ();
 
 public:
@@ -87,7 +87,6 @@ private:
 
     int                                 m_ninterrupts;
     bool                                m_qemuLoaded;
-    int                                 m_firstcpuindex;
 
     cpu_logs                            *m_logs;
 };

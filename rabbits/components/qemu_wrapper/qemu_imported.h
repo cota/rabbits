@@ -27,7 +27,7 @@ extern "C"
 
     struct qemu_import_t;
 
-    typedef void            *(*qemu_init_fc_t) (int id, int ncpu, int indexfirstcpu,
+    typedef void            *(*qemu_init_fc_t) (int id, int ncpu,
                                                 const char *cpu_model, int _ramsize, 
                                                 struct qemu_import_t *qi, void *systemc_fcs);
     typedef void            (*qemu_add_map_fc_t) (void *instance,
@@ -49,7 +49,7 @@ extern "C"
         unsigned long long *no_uncached);
     typedef void            (*qemu_invalidate_address_fc_t) (void* instance, 
                                                              unsigned long addr, int src_idx);
-    typedef int             (*gdb_srv_start_and_wait_fc_t) (int port);
+    typedef int             (*gdb_srv_start_and_wait_fc_t) (void* instance, int port);
 
     //imported by QEMU
     struct qemu_import_t

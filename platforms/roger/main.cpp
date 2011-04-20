@@ -127,7 +127,7 @@ int sc_main (int argc, char ** argv)
     arm_load_kernel (&is);
 
     //masters
-    qemu_wrapper qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 0, 
+    qemu_wrapper qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 
                         is.cpu_family, is.cpu_model, is.ramsize);
     qemu1.add_map(0xA0000000, 0x10000000); // (base address, size)
     qemu1.set_base_address (QEMU_ADDR_BASE);
@@ -137,7 +137,8 @@ int sc_main (int argc, char ** argv)
         onoc->connect_master_64 (i, qemu1.get_cpu(i)->put_port, qemu1.get_cpu(i)->get_port);
 
     if(is.gdb_port > 0){
-        qemu1.m_qemu_import.gdb_srv_start_and_wait(is.gdb_port);
+        qemu1.m_qemu_import.gdb_srv_start_and_wait(qemu1.m_qemu_instance,
+            is.gdb_port);
         //qemu1.set_unblocking_write (0);
     }
 

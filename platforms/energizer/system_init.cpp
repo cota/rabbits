@@ -50,6 +50,7 @@ enum
     CMDLINE_OPTION_kernel,
     CMDLINE_OPTION_initrd,
     CMDLINE_OPTION_gdb_port,
+    CMDLINE_OPTION_gdb_port_dna,
 	CMDLINE_OPTION_kernel_cmd,
 };
 
@@ -71,6 +72,7 @@ const cmdline_option cmdline_options[] =
     {"kernel",  HAS_ARG, CMDLINE_OPTION_kernel},
     {"initrd",  HAS_ARG, CMDLINE_OPTION_initrd},
     {"gdb_port",  HAS_ARG, CMDLINE_OPTION_gdb_port},
+    {"gdb_port_dna",  HAS_ARG, CMDLINE_OPTION_gdb_port_dna},
 	{"append", HAS_ARG, CMDLINE_OPTION_kernel_cmd},
     {NULL},
 };
@@ -145,6 +147,9 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
             is->initrd_filename = optarg;
         case CMDLINE_OPTION_gdb_port:
             is->gdb_port = atoi (optarg);
+            break;
+        case CMDLINE_OPTION_gdb_port_dna:
+            is->gdb_port_dna = atoi (optarg);
             break;
 		case CMDLINE_OPTION_kernel_cmd:
 			 is->kernel_cmdline = optarg;
