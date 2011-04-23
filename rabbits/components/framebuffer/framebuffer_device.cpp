@@ -164,13 +164,16 @@ fb_device::init_viewer ()
     sleep(1);
 }
 
-fb_device::fb_device (sc_module_name _name, uint32_t master_id, fb_reset_t *reset_status)
+fb_device::fb_device (sc_module_name _name, uint32_t master_id,
+    fb_reset_t *reset_status)
     :sc_module(_name)
 {
     char *buf = new char[strlen (_name) + 3];
 
     m_regs = new fb_regs_t;
+    memset (m_regs, 0, sizeof (fb_regs_t));
     m_io_res = new fb_io_resource_t;
+    memset (m_io_res, 0, sizeof (fb_io_resource_t));
 
     m_io_res->regs     = m_regs;
     m_io_res->mem_size = 0;

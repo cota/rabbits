@@ -606,6 +606,15 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     unsigned char                   tid;
     qemu_wrapper_request            *localrq;
 
+    #if 0
+    static int cnt = 0;
+    if (m_node_id == 6)
+    {
+        cnt++;
+        printf ("EC%d write_%d 0x%lx @ 0x%lx\n", cnt, nbytes, data, addr);
+    }
+    #endif
+
     if (m_unblocking_write)
         localrq = m_rqs->GetNewRequest (bIO);
     else

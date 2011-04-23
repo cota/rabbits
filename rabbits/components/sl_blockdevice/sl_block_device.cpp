@@ -44,7 +44,8 @@
 #define EPRINTF(fmt, args...)                               \
     do { fprintf(stderr, "sl_block_device: " fmt , ##args); } while (0)
 
-sl_block_device::sl_block_device (sc_module_name _name, uint32_t master_id, const char *fname, uint32_t block_size)
+sl_block_device::sl_block_device (sc_module_name _name, uint32_t master_id,
+                                  const char *fname, uint32_t block_size)
 :sc_module(_name)
 {
     char *buf = new char[strlen(_name) + 3];

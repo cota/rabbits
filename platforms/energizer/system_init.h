@@ -25,17 +25,20 @@ typedef struct
     const char          *cpu_family;
     const char          *cpu_model;
     const char          *kernel_filename;
+    const char          *ec_kernel_filename;
     const char          *initrd_filename;
     const char          *kernel_cmdline;
     int                 no_cpus;
     int                 ramsize;
+    int                 ec_ramsize;
     int                 sramsize;
     int                 gdb_port;
-    int                 gdb_port_dna;
+    int                 ec_gdb_port;
 } init_struct;
 
 void parse_cmdline (int argc, char **argv, init_struct *is);
 int check_init (init_struct *is);
+void arm_load_dnaos (init_struct *is);
 void arm_load_kernel (init_struct *is);
 
 #endif

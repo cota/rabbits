@@ -91,7 +91,8 @@ void sl_timer_device::write (unsigned long ofs, unsigned char be, unsigned char 
     case TIMER_PERIOD:
         m_period      = value;
         m_next_period = (sc_time_stamp().value() - m_last_period) + 
-            ((uint64_t)1000000000000ULL /* 1s -> ps */ / (SYSTEM_CLOCK_FV / TIMER_DIV) * m_period);
+            ((uint64_t)1000000000000ULL /* 1s -> ps */ /
+            (SYSTEM_CLOCK_FV / TIMER_DIV) * m_period);
 
         DPRINTF("TIMER_PERIOD write : %d (curr_tick: %lld next: %lld)\n",
                value, (sc_time_stamp().value() - m_last_period)/1000,

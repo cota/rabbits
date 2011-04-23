@@ -27,6 +27,8 @@
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
+#define SYSTEM_CLOCK_FV 1000000000
+
 #endif
 
 /*

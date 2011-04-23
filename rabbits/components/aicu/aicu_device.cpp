@@ -35,7 +35,7 @@
 #endif
 
 aicu_device::aicu_device (sc_module_name module_name, int nb_out, 
-                          int nb_global_in, int nb_local_in) : slave_device (module_name)
+    int nb_global_in, int nb_local_in) : slave_device (module_name)
 {
     int i = 0;
 

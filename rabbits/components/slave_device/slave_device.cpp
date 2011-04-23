@@ -42,6 +42,16 @@ void slave_device::request_thread ()
     {
         get_port->get (m_req);
 
+        #if 0
+        if (m_req.srcid == 6)
+        {
+            printf ("slave_device %s - addr = 0x%lx, src=%d, slave_id=%d,%s\n",
+                name (),
+                (unsigned long) m_req.initial_address, m_req.srcid,
+                m_req.slave_id, (m_req.cmd == CMD_WRITE) ? "WR" : "RD");
+        }
+        #endif
+
         if(m_bProcessing_rq)
         {
             fprintf(stdout, "Recieved a request while processing previous one: drop it\n");

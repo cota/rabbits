@@ -46,11 +46,13 @@ enum
 	CMDLINE_OPTION_cpu_family,
     CMDLINE_OPTION_cpu,
     CMDLINE_OPTION_ram,
+    CMDLINE_OPTION_ec_ram,
     CMDLINE_OPTION_sram,
     CMDLINE_OPTION_kernel,
+    CMDLINE_OPTION_ec_kernel,
     CMDLINE_OPTION_initrd,
     CMDLINE_OPTION_gdb_port,
-    CMDLINE_OPTION_gdb_port_dna,
+    CMDLINE_OPTION_ec_gdb_port,
 	CMDLINE_OPTION_kernel_cmd,
 };
 
@@ -68,11 +70,13 @@ const cmdline_option cmdline_options[] =
     {"M",       HAS_ARG, CMDLINE_OPTION_cpu_family},
     {"cpu",     HAS_ARG, CMDLINE_OPTION_cpu},
     {"ram",     HAS_ARG, CMDLINE_OPTION_ram},
+    {"ec_ram",     HAS_ARG, CMDLINE_OPTION_ec_ram},
     {"sram",    HAS_ARG, CMDLINE_OPTION_sram},
     {"kernel",  HAS_ARG, CMDLINE_OPTION_kernel},
+    {"ec_kernel",  HAS_ARG, CMDLINE_OPTION_ec_kernel},
     {"initrd",  HAS_ARG, CMDLINE_OPTION_initrd},
     {"gdb_port",  HAS_ARG, CMDLINE_OPTION_gdb_port},
-    {"gdb_port_dna",  HAS_ARG, CMDLINE_OPTION_gdb_port_dna},
+    {"ec_gdb_port",  HAS_ARG, CMDLINE_OPTION_ec_gdb_port},
 	{"append", HAS_ARG, CMDLINE_OPTION_kernel_cmd},
     {NULL},
 };
@@ -137,19 +141,25 @@ void parse_cmdline (int argc, char **argv, init_struct *is)
         case CMDLINE_OPTION_ram:
             is->ramsize = atoi (optarg) * 1024 * 1024;
             break;
+        case CMDLINE_OPTION_ec_ram:
+            is->ec_ramsize = atoi (optarg) * 1024 * 1024;
+            break;
         case CMDLINE_OPTION_sram:
             is->sramsize = atoi (optarg) * 1024 * 1024;
             break;
         case CMDLINE_OPTION_kernel:
             is->kernel_filename = optarg;
             break;
+        case CMDLINE_OPTION_ec_kernel:
+            is->ec_kernel_filename = optarg;
+            break;
         case CMDLINE_OPTION_initrd:
             is->initrd_filename = optarg;
         case CMDLINE_OPTION_gdb_port:
             is->gdb_port = atoi (optarg);
             break;
-        case CMDLINE_OPTION_gdb_port_dna:
-            is->gdb_port_dna = atoi (optarg);
+        case CMDLINE_OPTION_ec_gdb_port:
+            is->ec_gdb_port = atoi (optarg);
             break;
 		case CMDLINE_OPTION_kernel_cmd:
 			 is->kernel_cmdline = optarg;
@@ -172,6 +182,15 @@ int check_init (init_struct *is)
 
     if (is->initrd_filename && stat(is->initrd_filename, &s) != 0) {
         printf("cannot stat initrd file '%s': %s\n", is->initrd_filename, strerror(errno));
+        error = 1;
+    }
+
+    if (!is->ec_kernel_filename) {
+        printf("Please specify energy control kernel name with -ec_kernel\n");
+        error = 1;
+    } else if (stat(is->ec_kernel_filename, &s) != 0) {
+        printf("cannot stat energy control kernel file '%s': %s\n",
+            is->ec_kernel_filename, strerror(errno));
         error = 1;
     }
 
@@ -251,6 +270,11 @@ static void set_kernel_args (unsigned long ram_size, int initrd_size,
     /* ATAG_END */
     *p++ = 0;
     *p++ = 0;
+}
+
+void arm_load_dnaos (init_struct *is)
+{
+    systemc_load_image (is->ec_kernel_filename, is->ramsize + 0x1000);
 }
 
 void arm_load_kernel (init_struct *is)

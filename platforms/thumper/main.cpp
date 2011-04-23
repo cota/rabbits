@@ -97,18 +97,16 @@ int sc_main (int argc, char ** argv)
       (is.block_device == NULL) ? "ice_age_256x144_411.mjpeg" : is.block_device, 
       1024);
     fb_device         *fb   = new fb_device("fb", is.no_cpus+1, &fb_res_stat); 
-    sl_tty_device     *tty0 = new sl_tty_device ("tty0", 1);
-    sl_tty_device     *tty1 = new sl_tty_device ("tty1", 1);
+    sl_tty_device     *tty0 = new sl_tty_device ("tty1", 1);
     sl_mailbox_device *mb   = new sl_mailbox_device("mb", n_mb); 
     aicu_device       *icu  = new aicu_device("aicu", is.no_cpus, 2, 2);
 
     slaves[nslaves++] = ram;             // 0
     slaves[nslaves++] = tty0;            // 1
-    slaves[nslaves++] = tty1;            // 2
-    slaves[nslaves++] = mb;              // 3
-    slaves[nslaves++] = icu;             // 4
-    slaves[nslaves++] = fb->get_slave(); // 5
-    slaves[nslaves++] = bl->get_slave(); // 6
+    slaves[nslaves++] = mb;              // 2
+    slaves[nslaves++] = icu;             // 3
+    slaves[nslaves++] = fb->get_slave(); // 4
+    slaves[nslaves++] = bl->get_slave(); // 5
 
     sl_timer_device    *timers [is.no_cpus];
     for (i = 0; i < is.no_cpus; i++)
@@ -116,7 +114,7 @@ int sc_main (int argc, char ** argv)
         char        buf[20];
         sprintf (buf, "timer_%d", i);
         timers[i] = new sl_timer_device (buf);
-        slaves[nslaves++] = timers[i]; // 7 + i
+        slaves[nslaves++] = timers[i]; // 6 + i
     };
 
     // Connecting Qemu to AICU (IRQ wires);
