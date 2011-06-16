@@ -47,6 +47,7 @@
 #include "sl_mailbox_device.h"
 #include "aicu_device.h"
 #include "sl_timer_device.h"
+#include "qemu_wrapper_slave.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -56,8 +57,8 @@ unsigned long no_frames_to_simulate = 0;
 
 mem_device          *ram = NULL, *ec_ram = NULL;
 interconnect        *onoc = NULL;
-slave_device        *slaves[50], *ec_slaves[20];
-int                 nslaves = 0, ec_nslaves = 0;;
+slave_device        *slaves[50];
+int                 nslaves = 0;
 init_struct         is;
 
 int sc_main (int argc, char ** argv)
@@ -69,89 +70,34 @@ int sc_main (int argc, char ** argv)
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 3;
+    is.no_cpus = 4;
     is.ramsize = 128 * 1024 * 1024;
     is.ec_ramsize = 20 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
         return 1;
 
-    fb_reset_t fb_res_stat = {
-        /* .fb_start =           */    0,
-        /* .fb_w =               */    0,
-        /* .fb_h =               */    0,
-        /* .fb_mode =            */ NONE,
-        /* .fb_display_on_warp = */    0,
-    };
-
-    //slaves
-    ram = new mem_device ("dynamic", 
-        is.ramsize + 0x1000 + is.ec_ramsize + 0x1000);
-    sram_device       *sram  = new sram_device ("sram", 0x800000);
-    tty_serial_device *tty   = new tty_serial_device ("tty");
-    sem_device        *sem   = new sem_device ("sem", 0x100000);
-    fb_device         *fb    = new fb_device("fb", is.no_cpus, &fb_res_stat); 
-    dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 1);
-    sl_block_device   *bl    = new sl_block_device("block", is.no_cpus + 2, NULL, 1);
-
-    timer_device      *timers[1];
-    int                ntimers = sizeof (timers) / sizeof (timer_device *);
-
-    slaves[nslaves++] = ram;             // 0
-    slaves[nslaves++] = sram;            // 1
-    slaves[nslaves++] = fb->get_slave(); // 2
-    slaves[nslaves++] = tty;             // 3
-    slaves[nslaves++] = sem;             // 4
-    slaves[nslaves++] = bl->get_slave(); // 5
-
-    for (i = 0; i < ntimers; i++)
-    {
-        char        buf[20];
-        sprintf (buf, "timer_%d", i);
-        timers[i] = new timer_device (buf);
-        slaves[nslaves++] = timers[i];   // 6 + i
-    }
-
-    int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
-    int                         int_cpu_mask [] = {1, 1, 1, 1, 0, 0};
-    sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
-    for (i = 0; i < ntimers; i++)
-        timers[i]->irq (wires_irq_qemu[i]);
-    tty->irq_line (wires_irq_qemu[ntimers]);
-    fb->irq (wires_irq_qemu[ntimers + 1]);
-    dbf->irq (wires_irq_qemu[ntimers + 2]);
-
+    // slaves
     // energy control part
-    fb_reset_t    ec_fb_res_stat;
-    ec_fb_res_stat.fb_start  = 1;
-    ec_fb_res_stat.fb_w      = 256;
-    ec_fb_res_stat.fb_h      = 144;
-    ec_fb_res_stat.fb_mode   = YV16;
-    ec_fb_res_stat.fb_display_on_wrap = 1;
-//    ec_ram = new mem_device ("ec_dynamic", is.ec_ramsize + 0x1000);
-    sl_block_device   *ec_bl   = new sl_block_device("ec_block", is.no_cpus + 4,
-      "ice_age_256x144_411.mjpeg", 1024);
-    fb_device           *ec_fb   = new fb_device ("ec_fb",
-        is.no_cpus + 5, &ec_fb_res_stat);
+    ec_ram = new mem_device ("ec_dynamic", is.ec_ramsize + 0x1000);
     sl_tty_device       *ec_tty = new sl_tty_device ("ec_tty", 1);
     sl_mailbox_device   *ec_mb   = new sl_mailbox_device ("ec_mb", 1);
-    aicu_device         *ec_aicu  = new aicu_device ("ec_aicu", 1, 2, 2);
+    aicu_device         *ec_aicu  = new aicu_device ("ec_aicu", 1, 1, 2);
     sl_timer_device     *ec_timer = new sl_timer_device ("ec_timer");
 
-    ec_slaves[ec_nslaves++] = ec_tty;             // 8
-    ec_slaves[ec_nslaves++] = ec_mb;              // 9
-    ec_slaves[ec_nslaves++] = ec_aicu;            // 10
-    ec_slaves[ec_nslaves++] = ec_fb->get_slave(); // 11
-    ec_slaves[ec_nslaves++] = ec_bl->get_slave(); // 12
-    ec_slaves[ec_nslaves++] = ec_timer;           // 13
+    slaves[nslaves++] = ec_tty;             // 0
+    slaves[nslaves++] = ec_mb;              // 1
+    slaves[nslaves++] = ec_aicu;            // 2
+    slaves[nslaves++] = ec_timer;           // 3
+    slaves[nslaves++] = ec_ram;             // 4
 
-    // Connecting qemu to AICU (IRQ wires);
+    // connecting qemu to AICU (IRQ wires);
     int                 ec_int_cpu_mask = 1;
     sc_signal<bool>     ec_wire_irq_qemu;
     ec_aicu->irq_out[0] (ec_wire_irq_qemu);
 
-    // Connecting AICU irq wires to peripherals
-    sc_signal<bool>     *ec_aicu_irq_wire = new sc_signal<bool> [2 * 1 + 2];
+    // connecting AICU irq wires to peripherals
+    sc_signal<bool>     *ec_aicu_irq_wire = new sc_signal<bool> [1 + 1 * 2];
     int                 ec_aicu_irq_idx = 0;
     ec_mb->irq[0] (ec_aicu_irq_wire[ec_aicu_irq_idx]);
     ec_aicu->irq_in[ec_aicu_irq_idx] (ec_aicu_irq_wire[ec_aicu_irq_idx]);
@@ -161,65 +107,81 @@ int sc_main (int argc, char ** argv)
     ec_aicu->irq_in[ec_aicu_irq_idx] (ec_aicu_irq_wire[ec_aicu_irq_idx]);
     ec_aicu_irq_idx++;
 
-    ec_bl->irq (ec_aicu_irq_wire[ec_aicu_irq_idx]);
-    ec_aicu->irq_in[ec_aicu_irq_idx](ec_aicu_irq_wire[ec_aicu_irq_idx]);
+    // no irq for tty
+    ec_aicu->irq_in[ec_aicu_irq_idx] (ec_aicu_irq_wire[ec_aicu_irq_idx]);
     ec_aicu_irq_idx++;
 
-    ec_fb->irq (ec_aicu_irq_wire[ec_aicu_irq_idx]);
-    ec_aicu->irq_in[ec_aicu_irq_idx](ec_aicu_irq_wire[ec_aicu_irq_idx]);
-    ec_aicu_irq_idx++;
+    // slaves for the useful part
+    fb_reset_t fb_res_stat = {
+        /* .fb_start =           */    0,
+        /* .fb_w =               */    0,
+        /* .fb_h =               */    0,
+        /* .fb_mode =            */ NONE,
+        /* .fb_display_on_warp = */    0,
+    };
 
-    //interconnect
-    onoc = new interconnect ("interconnect",
-        /* masters: (CPUs + FB + DBF + BL) + (EC_CPU + EC_FB + EC_BL)*/
-                             is.no_cpus + 3  + 3,
-                             (nslaves + 1) + ec_nslaves);
-    for (i = 0; i < nslaves; i++)
-        onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
-    onoc->connect_slave_64 (nslaves, dbf->get_port, dbf->put_port);
+    ram = new mem_device ("dynamic", 
+        is.ramsize + 0x1000/* + is.ec_ramsize + 0x1000*/);
+    sram_device       *sram  = new sram_device ("sram", 0x800000);
+    tty_serial_device *tty   = new tty_serial_device ("tty");
+    sem_device        *sem   = new sem_device ("sem", 0x100000);
+    fb_device         *fb    = new fb_device("fb", is.no_cpus + 1, &fb_res_stat);
+    dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 2);
+    sl_block_device   *bl    = new sl_block_device("block", is.no_cpus + 3, NULL, 1);
+    qemu_wrapper_slave_device
+                 *qemu_slave = new qemu_wrapper_slave_device ("qemu_slave");
 
-    for (i = 0; i < ec_nslaves; i++)
-        onoc->connect_slave_64 (nslaves + 1 + i, ec_slaves[i]->get_port,
-                                ec_slaves[i]->put_port);
+    timer_device      *timers[1];
+    int                ntimers = sizeof (timers) / sizeof (timer_device *);
 
-    arm_load_kernel (&is);
-    arm_load_dnaos (&is);
+    slaves[nslaves++] = ram;             // 5
+    slaves[nslaves++] = sram;            // 6
+    slaves[nslaves++] = fb->get_slave(); // 7
+    slaves[nslaves++] = tty;             // 8
+    slaves[nslaves++] = sem;             // 9
+    slaves[nslaves++] = bl->get_slave(); // 10
+    slaves[nslaves++] = qemu_slave;      // 11
+    slaves[nslaves++] = NULL;             //12 - reserved for dbf
 
-    //masters
-    qemu_wrapper qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus,
-                        is.cpu_family, is.cpu_model, is.ramsize);
-    qemu1.add_map(0xA0000000, 0x10000000); // (base address, size)
-    qemu1.set_base_address (QEMU_ADDR_BASE);
-    for(i = 0; i < no_irqs; i++)
-        qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
-    for(i = 0; i < is.no_cpus; i++)
-        onoc->connect_master_64 (i, qemu1.get_cpu(i)->put_port, qemu1.get_cpu(i)->get_port);
-
-    if (is.gdb_port > 0)
+    for (i = 0; i < ntimers; i++)
     {
-        qemu1.m_qemu_import.gdb_srv_start_and_wait (qemu1.m_qemu_instance,
-            is.gdb_port);
-        //qemu1.set_unblocking_write (0);
+        char        buf[20];
+        sprintf (buf, "timer_%d", i);
+        timers[i] = new timer_device (buf);
+        slaves[nslaves++] = timers[i];   // 13 + i
     }
+    
+    int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
+    int                         int_cpu_mask [] = {1, 1, 1, 1, 0, 0};
+    sc_signal<bool>             *wires_irq_qemu = new sc_signal<bool>[no_irqs];
+    for (i = 0; i < ntimers; i++)
+        timers[i]->irq (wires_irq_qemu[i]);
+    tty->irq_line (wires_irq_qemu[ntimers]);
+    fb->irq (wires_irq_qemu[ntimers + 1]);
+    dbf->irq (wires_irq_qemu[ntimers + 2]);
 
-    onoc->connect_master_64 (is.no_cpus,
-        fb->get_master()->put_port, fb->get_master()->get_port);
-    onoc->connect_master_64 (is.no_cpus + 1,
-        dbf->master_put_port, dbf->master_get_port);
-    sc_signal<bool>         bl_irq_wire;
-    bl->irq (bl_irq_wire);
-    onoc->connect_master_64 (is.no_cpus + 2,
-        bl->get_master()->put_port, bl->get_master()->get_port);
+    // interconnect
+    onoc = new interconnect ("interconnect",
+        /* masters: (CPUs + FB + DBF + BL) + (EC_CPU)*/
+                             is.no_cpus + 3  + 1, nslaves);
+    for (i = 0; i < nslaves; i++)
+        if (slaves[i])
+            onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
+    onoc->connect_slave_64 (12, dbf->get_port, dbf->put_port);
 
-    //energy control masters
+    arm_load_kernel (ram, &is);
+    arm_load_dnaos (ec_ram, &is);
+
+    // masters
+    // energy control masters
     qemu_wrapper            ec_qemu (
-        "ec_QEMU1", /*node*/ is.no_cpus + 3,
+        "ec_QEMU1", /*node*/ 0,
         /*no_irq*/ 1, &ec_int_cpu_mask, /*no_cpus*/ 1,
         is.cpu_family, is.cpu_model, is.ec_ramsize);
     ec_qemu.add_map (0xC0000000, 0x10000000); // (base address, size)
     ec_qemu.set_base_address (QEMU_ADDR_BASE);
     ec_qemu.interrupt_ports[0] (ec_wire_irq_qemu);
-    onoc->connect_master_64 (is.no_cpus + 3, ec_qemu.get_cpu (0)->put_port,
+    onoc->connect_master_64 (0, ec_qemu.get_cpu (0)->put_port,
                              ec_qemu.get_cpu (0)->get_port);
     if (is.ec_gdb_port > 0)
     {
@@ -228,16 +190,38 @@ int sc_main (int argc, char ** argv)
         //ec_qemu.set_unblocking_write (0);
     }
 
-    onoc->connect_master_64 (is.no_cpus + 4,
-                             ec_bl->get_master()->put_port,
-                             ec_bl->get_master()->get_port);
-    onoc->connect_master_64 (is.no_cpus + 5,
-                             ec_fb->get_master()->put_port,
-                             ec_fb->get_master()->get_port);
-
     ec_qemu.get_cpu (0)->systemc_qemu_write_memory (
         QEMU_ADDR_BASE + SET_SYSTEMC_INT_ENABLE,
         0xFFFF /* 16 processors */, 4, 0);
+
+    // masters for useful work
+    qemu_wrapper qemu1 ("QEMU1", /*node_id*/ 1,
+                        no_irqs, int_cpu_mask, is.no_cpus,
+                        is.cpu_family, is.cpu_model, is.ramsize);
+    qemu1.add_map(0xA0000000, 0x10000000); // (base address, size)
+    qemu1.set_base_address (QEMU_ADDR_BASE);
+    qemu_slave->set_master (&qemu1);
+    for(i = 0; i < no_irqs; i++)
+        qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
+    for(i = 0; i < is.no_cpus; i++)
+        onoc->connect_master_64 (i + 1,
+            qemu1.get_cpu(i)->put_port, qemu1.get_cpu(i)->get_port);
+
+    if (is.gdb_port > 0)
+    {
+        qemu1.m_qemu_import.gdb_srv_start_and_wait (qemu1.m_qemu_instance,
+            is.gdb_port);
+        //qemu1.set_unblocking_write (0);
+    }
+
+    onoc->connect_master_64 (is.no_cpus + 1,
+        fb->get_master()->put_port, fb->get_master()->get_port);
+    onoc->connect_master_64 (is.no_cpus + 2,
+        dbf->master_put_port, dbf->master_get_port);
+    sc_signal<bool>         bl_irq_wire;
+    bl->irq (bl_irq_wire);
+    onoc->connect_master_64 (is.no_cpus + 3,
+        bl->get_master()->put_port, bl->get_master()->get_port);
 
     sc_start ();
 
@@ -271,7 +255,7 @@ void invalidate_address (unsigned long addr, int slave_id,
     }
 }
 
-int systemc_load_image (const char *file, unsigned long ofs)
+int systemc_load_image (slave_device *device, const char *file, unsigned long ofs)
 {
     if (file == NULL)
         return -1;
@@ -282,7 +266,7 @@ int systemc_load_image (const char *file, unsigned long ofs)
         return -1;
 
     img_size = lseek (fd, 0, SEEK_END);
-    if (img_size + ofs >  ram->get_size ())
+    if (img_size + ofs >  device->get_size ())
     {
         printf ("%s - RAM size < %s size + %lx\n", __FUNCTION__, file, ofs);
         close(fd);
@@ -291,7 +275,7 @@ int systemc_load_image (const char *file, unsigned long ofs)
 
     lseek (fd, 0, SEEK_SET);
     size = img_size;
-    if (read (fd, ram->get_mem () + ofs, size) != size)
+    if (read (fd, device->get_mem () + ofs, size) != size)
     {
         printf ("Error reading file (%s) in function %s.\n", file, __FUNCTION__);
         close(fd);
@@ -331,7 +315,7 @@ void memory_mark_exclusive (int cpu, unsigned long addr)
         mem_exclusive[no_mem_exclusive].cpu = cpu;
         no_mem_exclusive++;
 
-        if (no_mem_exclusive > is.no_cpus)
+        if (no_mem_exclusive > is.no_cpus + 1)
         {
             printf ("Warning: number of elements in the exclusive list (%d) > cpus (%d) (list: ",
                 no_mem_exclusive, is.no_cpus);

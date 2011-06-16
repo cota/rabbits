@@ -24,6 +24,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include "slave_device.h"
+
 #define BOARD_ID            2339
 #define KERNEL_ARGS_ADDR    0x100
 #define KERNEL_LOAD_ADDR    0x00010000
@@ -36,7 +38,8 @@
 
 extern unsigned long no_frames_to_simulate;
 
-int systemc_load_image (const char *kernel, unsigned long ofs);
+int systemc_load_image (slave_device *device, const char *kernel,
+    unsigned long ofs);
 unsigned char* systemc_get_sram_mem_addr ();
 
 enum
@@ -272,23 +275,27 @@ static void set_kernel_args (unsigned long ram_size, int initrd_size,
     *p++ = 0;
 }
 
-void arm_load_dnaos (init_struct *is)
+void arm_load_dnaos (slave_device *device, init_struct *is)
 {
-    systemc_load_image (is->ec_kernel_filename, is->ramsize + 0x1000);
+    systemc_load_image (device, is->ec_kernel_filename,
+        0/*is->ramsize + 0x1000*/);
 }
 
-void arm_load_kernel (init_struct *is)
+void arm_load_kernel (slave_device *device, init_struct *is)
 {
-    systemc_load_image (is->kernel_filename, KERNEL_LOAD_ADDR);
+    systemc_load_image (device, is->kernel_filename, KERNEL_LOAD_ADDR);
 
     memcpy (systemc_get_sram_mem_addr (), bootloader, sizeof (bootloader));
     memcpy (systemc_get_sram_mem_addr () + is->ramsize, smpboot, sizeof (smpboot));
 
-    int     initrd_size = systemc_load_image (is->initrd_filename, INITRD_LOAD_ADDR);
+    int     initrd_size = systemc_load_image (device, is->initrd_filename,
+        INITRD_LOAD_ADDR);
     if (-1 == initrd_size)
         initrd_size = 0;
 
     set_kernel_args (is->ramsize, initrd_size, is->kernel_cmdline, 0);
+
+//    * (unsigned long *) device->get_mem () = 0xe320f003;
 }
 
 /*

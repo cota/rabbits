@@ -41,6 +41,7 @@ public:
     virtual void rcv_rqst (unsigned long ofs, unsigned char be,
                            unsigned char *data, bool bWrite) = 0;
     virtual unsigned char *get_mem () {return 0;}
+    virtual unsigned long get_size () {return 0;}
 
 public:
     //ports

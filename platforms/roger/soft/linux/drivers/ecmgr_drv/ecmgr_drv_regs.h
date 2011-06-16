@@ -17,33 +17,20 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYSTEM_INIT_H_
-#define _SYSTEM_INIT_H_
+#ifndef _ECMGR_DRV_REGS_H
+#define _ECMGR_DRV_REGS_H
 
-class slave_device;
+#define ECMGR_ADDR_BASE             0xAC000000UL
 
-typedef struct
-{
-    const char          *cpu_family;
-    const char          *cpu_model;
-    const char          *kernel_filename;
-    const char          *ec_kernel_filename;
-    const char          *initrd_filename;
-    const char          *kernel_cmdline;
-    int                 no_cpus;
-    int                 ramsize;
-    int                 ec_ramsize;
-    int                 sramsize;
-    int                 gdb_port;
-    int                 ec_gdb_port;
-} init_struct;
+#define ECMGR_REG_COMMAND           0x0000
+#define ECMGR_REG_DATA              0x0004
+#define ECMGR_REG_RESERVED          0x0008
+#define ECMGR_REG_RESET             0x000C
+#define ECMGR_REG_DNA_THREAD        0x1000
 
-void parse_cmdline (int argc, char **argv, init_struct *is);
-int check_init (init_struct *is);
-void arm_load_dnaos (slave_device *device, init_struct *is);
-void arm_load_kernel (slave_device *device, init_struct *is);
+#define DNA_IPI_DISPATCH_COMMAND    0xFFFF
 
-#endif
+#endif /* _ECMGR_DRV_REGS_H */
 
 /*
  * Vim standard variables

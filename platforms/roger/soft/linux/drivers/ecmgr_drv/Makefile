@@ -1,4 +1,3 @@
-#! /bin/bash
 #
 # Copyright (c) 2010 TIMA Laboratory
 #
@@ -18,9 +17,18 @@
 # along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-rm -fr logCPU*
-rm -fr qemu_f*.lst
+PWD              := $(shell pwd)
+EXTRA_CFLAGS     :=
+#EXTRA_CFLAGS     := -DDEBUG -DHDEBUG
 
-export PATH=$PWD/../../rabbits/tools:$PATH
-./run.x -cpu arm11mpcore -kernel ../roger/soft/linux/linux/arch/arm/boot/zImage -initrd ../roger/soft/initrd/initrd.gz -ec_kernel ~/dnaos_apps/ec_app_comcas/ec_app_comcas.bin "$@"
+obj-m            := ecmgr.o
+ecmgr-objs       := ecmgr_drv.o
+
+.PHONY: all clean modules_install
+
+all:
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
+
+clean:
+	rm -fr *.ko *.o .*.cmd .*.o.flags *.mod.c modules.order *.symvers *~ .tmp*
 

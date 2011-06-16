@@ -17,31 +17,39 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYSTEM_INIT_H_
-#define _SYSTEM_INIT_H_
+#ifndef _QEMU_WRAPPER_SLAVE_H_
+#define _QEMU_WRAPPER_SLAVE_H_
 
-class slave_device;
+#include "slave_device.h"
+#include "qemu_wrapper.h"
 
-typedef struct
+enum qemu_wrapper_slave_registers {
+    QEMU_WRAPPER_SLAVE_SET_CPUS_FQ = 0,
+};
+
+class qemu_wrapper_slave_device : public slave_device
 {
-    const char          *cpu_family;
-    const char          *cpu_model;
-    const char          *kernel_filename;
-    const char          *ec_kernel_filename;
-    const char          *initrd_filename;
-    const char          *kernel_cmdline;
-    int                 no_cpus;
-    int                 ramsize;
-    int                 ec_ramsize;
-    int                 sramsize;
-    int                 gdb_port;
-    int                 ec_gdb_port;
-} init_struct;
+public:
+    SC_HAS_PROCESS (qemu_wrapper_slave_device);
+    qemu_wrapper_slave_device (sc_module_name module_name);
+    virtual ~qemu_wrapper_slave_device ();
 
-void parse_cmdline (int argc, char **argv, init_struct *is);
-int check_init (init_struct *is);
-void arm_load_dnaos (slave_device *device, init_struct *is);
-void arm_load_kernel (slave_device *device, init_struct *is);
+public:
+    void set_master (qemu_wrapper *qemu_master);
+    /*
+     *   Obtained from father
+     *   void send_rsp (bool bErr);
+     */
+    virtual void rcv_rqst (unsigned long ofs, unsigned char be,
+                           unsigned char *data, bool bWrite);
+
+private:
+    void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
+    void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
+
+private:
+    qemu_wrapper        *m_qemu_master;
+};
 
 #endif
 

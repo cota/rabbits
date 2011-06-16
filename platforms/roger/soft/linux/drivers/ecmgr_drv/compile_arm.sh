@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 #
 # Copyright (c) 2010 TIMA Laboratory
 #
@@ -18,9 +18,26 @@
 # along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-rm -fr logCPU*
-rm -fr qemu_f*.lst
+HERE=`pwd`
 
-export PATH=$PWD/../../rabbits/tools:$PATH
-./run.x -cpu arm11mpcore -kernel ../roger/soft/linux/linux/arch/arm/boot/zImage -initrd ../roger/soft/initrd/initrd.gz -ec_kernel ~/dnaos_apps/ec_app_comcas/ec_app_comcas.bin "$@"
+if [ -z "${RABBITS_DIR}" ]; then
+	echo "You should source the rabbits_env"
+	exit
+fi
+
+if [ -z "${RABBITS_CROSS_COMPILE}" ]; then 
+	echo "You should source the soft_env"
+	exit
+fi
+
+export KERNEL_VERSION=2.6.32-rc3
+export KDIR=${HERE}/../../linux
+export PATH=${PATH}:${RABBITS_XTOOLS}/bin
+
+make || exit
+
+mkdir -p ${HERE}/../../../initrd/rootfs_dir/lib/modules/$KERNEL_VERSION
+cp ecmgr.ko ${HERE}/../../../initrd/rootfs_dir/lib/modules/$KERNEL_VERSION
+
+cd ${HERE}/../../../initrd && ./make_initramfs.sh
 

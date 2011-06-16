@@ -150,9 +150,12 @@ void aicu_device::write (unsigned long ofs, unsigned char be, unsigned char *dat
         case AICU_HANDLER29 :
         case AICU_HANDLER30 :
         case AICU_HANDLER31 :
-            DPRINTF("Setting Handler%d: 0x%x\n", (ofs - AICU_HANDLER0), value);
-            m_handlers[ofs - AICU_HANDLER0] = value;
-            break;
+            if (ofs - AICU_HANDLER0 < this->L + this->G)
+            {
+                DPRINTF("Setting Handler%d: 0x%x\n", (ofs - AICU_HANDLER0), value);
+                m_handlers[ofs - AICU_HANDLER0] = value;
+                break;
+            }
         default:
             printf ("Bad %s::%s ofs=0x%X, be=0x%X! (GLOBAL)\n",
                     name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
@@ -241,9 +244,11 @@ void aicu_device::read (unsigned long ofs, unsigned char be, unsigned char *data
         case AICU_HANDLER29 :
         case AICU_HANDLER30 :
         case AICU_HANDLER31 :
-            *val = m_handlers[ofs - AICU_HANDLER0];
-            break;
-            
+            if (ofs - AICU_HANDLER0 < this->L + this->G)
+            {
+                *val = m_handlers[ofs - AICU_HANDLER0];
+                break;
+            }
         default:
             printf ("Bad %s::%s ofs=0x%X, be=0x%X!\n",
                     name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);

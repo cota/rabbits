@@ -17,33 +17,25 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYSTEM_INIT_H_
-#define _SYSTEM_INIT_H_
+#ifndef _ECMGR_DEBUG_H_
+#define _ECMGR_DEBUG_H_
 
-class slave_device;
+#define EMSG(fmt, args...)  printk( KERN_INFO "ecmgr_drv: " fmt, ## args)
 
-typedef struct
-{
-    const char          *cpu_family;
-    const char          *cpu_model;
-    const char          *kernel_filename;
-    const char          *ec_kernel_filename;
-    const char          *initrd_filename;
-    const char          *kernel_cmdline;
-    int                 no_cpus;
-    int                 ramsize;
-    int                 ec_ramsize;
-    int                 sramsize;
-    int                 gdb_port;
-    int                 ec_gdb_port;
-} init_struct;
-
-void parse_cmdline (int argc, char **argv, init_struct *is);
-int check_init (init_struct *is);
-void arm_load_dnaos (slave_device *device, init_struct *is);
-void arm_load_kernel (slave_device *device, init_struct *is);
-
+#if defined(DEBUG)
+#   define MSG(fmt, args...) printk( KERN_INFO "ecmgr_drv: " fmt, ## args)
+#   if defined(HDEBUG)
+#      define DMSG(fmt, args...) printk( KERN_INFO "ecmgr_drv:dbg: " fmt, ## args)
+#   else
+#      define DMSG(fmt, args...) do { } while(0)
+#   endif
+#else
+#   define MSG(fmt, args...)  do { } while(0)
+#   define DMSG(fmt, args...)  do { } while(0)
 #endif
+
+
+#endif /* _ECMGR_DEBUG_H_ */
 
 /*
  * Vim standard variables

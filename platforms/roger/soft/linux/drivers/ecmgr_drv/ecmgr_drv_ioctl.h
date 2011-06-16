@@ -17,31 +17,23 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYSTEM_INIT_H_
-#define _SYSTEM_INIT_H_
+#ifndef _ECMGR_DRV_IOCTL_H
+#define _ECMGR_DRV_IOCTL_H
 
-class slave_device;
+#ifdef __KERNEL__
+#include <linux/types.h>
+#include <linux/kernel.h>
+#else
+#include <stdint.h>
+#include <stdlib.h>
+#endif
 
-typedef struct
-{
-    const char          *cpu_family;
-    const char          *cpu_model;
-    const char          *kernel_filename;
-    const char          *ec_kernel_filename;
-    const char          *initrd_filename;
-    const char          *kernel_cmdline;
-    int                 no_cpus;
-    int                 ramsize;
-    int                 ec_ramsize;
-    int                 sramsize;
-    int                 gdb_port;
-    int                 ec_gdb_port;
-} init_struct;
+#include <linux/ioctl.h>
 
-void parse_cmdline (int argc, char **argv, init_struct *is);
-int check_init (init_struct *is);
-void arm_load_dnaos (slave_device *device, init_struct *is);
-void arm_load_kernel (slave_device *device, init_struct *is);
+#define ECMGR_DRV_IOC_MAGIC  'e'
+
+#define ECMGR_DRV_IOCRESET                  _IO  (ECMGR_DRV_IOC_MAGIC, 0)
+#define ECMGR_DRV_IOCS_SEND_USE             _IOW (ECMGR_DRV_IOC_MAGIC, 1, unsigned long)
 
 #endif
 

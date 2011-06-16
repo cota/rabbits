@@ -44,113 +44,158 @@ sl_mailbox_device::sl_mailbox_device (sc_module_name module_name, int nb_mailbox
     m_command    = new uint32_t[nb_mailbox];
     m_data       = new uint32_t[nb_mailbox];
     m_status     = new uint32_t[nb_mailbox];
+    m_reserved   = new uint32_t[nb_mailbox];
 
-    for(i = 0; i < nb_mailbox; i++){
+    for (i = 0; i < nb_mailbox; i++)
+    {
         m_command[i] = 0;
         m_data[i]    = 0;
         m_status[i]  = 0;
+        m_reserved[i]= 0;
     }
 
+    for (i = 0; i < MAILBOX_GLOBAL_NO_REGS; i++)
+        m_global_reg[i] = 0;
 }
 
 sl_mailbox_device::~sl_mailbox_device ()
 {
 }
 
-void sl_mailbox_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
+void sl_mailbox_device::write (unsigned long ofs, unsigned char be,
+    unsigned char *data, bool &bErr)
 {
-    uint32_t                value;
-    uint32_t mailbox;
-    int lcl_ofs;
+    uint32_t                value, idx;
 
-    ofs >>= 2;
+    bErr = false;
+
+    idx = ofs >> 2;
     if (be & 0xF0)
     {
-        ofs++;
+        idx++;
         value = * ((uint32_t *) data + 1);
     }
     else
         value = * ((uint32_t *) data + 0);
 
-    mailbox = ofs / MAILBOX_SPAN;
-    lcl_ofs = ofs % MAILBOX_SPAN;
-
-    switch (lcl_ofs)
+    if (ofs >= MAILBOX_GLOBAL_START_ADDR)
     {
+        idx -= (MAILBOX_GLOBAL_START_ADDR >> 2);
+        if (idx >= MAILBOX_GLOBAL_NO_REGS)
+            bErr = true;
+        else
+            m_global_reg[idx] = value;
+    }
+    else
+    {
+        uint32_t                mailbox;
+        int                     lcl_ofs;
 
-    case MAILBOX_COMM_ADR:
-        DPRINTF("MAILBOX_COMM_ADR[%d] write: 0x%08x\n", mailbox, value);
-        m_command[mailbox] = value;
-        m_status[mailbox]  = MAILBOX_NEW_MESSAGE;
-        irq[mailbox]       = true;
-        break;
+        mailbox = idx / MAILBOX_SPAN;
+        lcl_ofs = idx % MAILBOX_SPAN;
 
-    case MAILBOX_DATA_ADR:
-        DPRINTF("MAILBOX_DATA_ADR[%d] write: 0x%08x\n", mailbox, value);
-        m_data[mailbox]  = value;
-        break;
+        switch (lcl_ofs)
+        {
 
-    case MAILBOX_RESET_ADR:
-        DPRINTF("MAILBOX_RESET_ADR[%d] write: 0x%x\n", mailbox, value);
-        m_status[mailbox] = MAILBOX_CLEAR;
-        irq[mailbox] = false;
-        break;
+        case MAILBOX_COMM_ADR:
+            DPRINTF("MAILBOX_COMM_ADR[%d] write: 0x%08x\n", mailbox, value);
+            m_command[mailbox] = value;
+            m_status[mailbox]  = MAILBOX_NEW_MESSAGE;
+            irq[mailbox]       = true;
+            break;
 
-    default:
-        DPRINTF ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
+        case MAILBOX_DATA_ADR:
+            DPRINTF("MAILBOX_DATA_ADR[%d] write: 0x%08x\n", mailbox, value);
+            m_data[mailbox]  = value;
+            break;
+
+        case MAILBOX_RESERVED_ADR:
+            DPRINTF("MAILBOX_RESERVED_ADR[%d] write: 0x%x\n", mailbox, value);
+            m_reserved[mailbox] = value;
+            break;
+
+        case MAILBOX_RESET_ADR:
+            DPRINTF("MAILBOX_RESET_ADR[%d] write: 0x%x\n", mailbox, value);
+            m_status[mailbox] = MAILBOX_CLEAR;
+            irq[mailbox] = false;
+            break;
+        default:
+            bErr = true;
+            break;
+        }
+    }
+
+    if (bErr)
+    {
+        printf ("Bad %s::%s ofs=0x%X, be=0x%X, data=0x%X-%X!\n",
                  name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be,
                  (unsigned int) *((unsigned long*)data + 0),
                  (unsigned int) *((unsigned long*)data + 1));
         exit (1);
-        break;
     }
-
-
-    bErr = false;
 }
 
 void sl_mailbox_device::read (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
 {
-    int        i;
-    int        mailbox = 0;
+    int        idx;
     uint32_t  *val = (uint32_t *)data;
-    int        lcl_ofs = 0; 
 
-    ofs >>= 2;
+    bErr = false;
+
+    idx = (ofs >> 2);
     if (be & 0xF0)
     {
-        ofs++;
+        idx++;
         val++;
     }
 
     *val = 0;
 
-    mailbox = ofs / MAILBOX_SPAN;
-    lcl_ofs = ofs % MAILBOX_SPAN;
-
-    switch (lcl_ofs)
+    if (ofs >= MAILBOX_GLOBAL_START_ADDR)
     {
-    case MAILBOX_COMM_ADR:
-        *val = m_command[mailbox];
-        DPRINTF("MAILBOX_COMM_ADR[%d] read: 0x%08x\n", mailbox, *val);
-        break;
+        idx -= (MAILBOX_GLOBAL_START_ADDR >> 2);
+        if (idx >= MAILBOX_GLOBAL_NO_REGS)
+            bErr = true;
+        else
+            *val = m_global_reg[idx];
+    }
+    else
+    {
+        int        mailbox, lcl_ofs;
 
-    case MAILBOX_DATA_ADR:
-        *val = m_data[mailbox];
-        DPRINTF("MAILBOX_DATA_ADR[%d] read: 0x%08x\n", mailbox, *val);
-        break;
+        mailbox = idx / MAILBOX_SPAN;
+        lcl_ofs = idx % MAILBOX_SPAN;
 
-    case MAILBOX_RESET_ADR:
-        *val = m_status[mailbox];
-        DPRINTF("MAILBOX_RESET_ADR[%d] read: 0x%x\n", mailbox, *val);
-        break;
+        switch (lcl_ofs)
+        {
+        case MAILBOX_COMM_ADR:
+            *val = m_command[mailbox];
+            DPRINTF("MAILBOX_COMM_ADR[%d] read: 0x%08x\n", mailbox, *val);
+            break;
+        case MAILBOX_DATA_ADR:
+            *val = m_data[mailbox];
+            DPRINTF("MAILBOX_DATA_ADR[%d] read: 0x%08x\n", mailbox, *val);
+            break;
+        case MAILBOX_RESERVED_ADR:
+            *val = m_reserved[mailbox];
+            DPRINTF("MAILBOX_RESERVED_ADR[%d] read: 0x%x\n", mailbox, *val);
+            break;
+        case MAILBOX_RESET_ADR:
+            *val = m_status[mailbox];
+            DPRINTF("MAILBOX_RESET_ADR[%d] read: 0x%x\n", mailbox, *val);
+            break;
+        default:
+            bErr = true;
+            break;
+        }
+    }
 
-    default:
+    if (bErr)
+    {
         printf ("Bad %s::%s ofs=0x%X, be=0x%X!\n",
-                name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
+            name (), __FUNCTION__, (unsigned int) ofs, (unsigned int) be);
         exit (1);
     }
-    bErr = false;
 }
 
 void sl_mailbox_device::rcv_rqst (unsigned long ofs, unsigned char be,

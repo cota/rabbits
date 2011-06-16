@@ -17,31 +17,35 @@
  *  along with Rabbits.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYSTEM_INIT_H_
-#define _SYSTEM_INIT_H_
+#ifndef _ECMGR_DRV_TYPES_H
+#define _ECMGR_DRV_TYPES_H
 
-class slave_device;
+#include <linux/spinlock.h>
+#include <linux/cdev.h>
 
-typedef struct
+#define ECMGR_DRV_MAXDEV    1
+
+typedef struct ecmgr_drv_driver ecmgr_drv_driver_t;
+typedef struct ecmgr_drv_device ecmgr_drv_device_t;
+
+struct ecmgr_drv_device
 {
-    const char          *cpu_family;
-    const char          *cpu_model;
-    const char          *kernel_filename;
-    const char          *ec_kernel_filename;
-    const char          *initrd_filename;
-    const char          *kernel_cmdline;
-    int                 no_cpus;
-    int                 ramsize;
-    int                 ec_ramsize;
-    int                 sramsize;
-    int                 gdb_port;
-    int                 ec_gdb_port;
-} init_struct;
+    int                 minor;                      /* Char device minor              */
+    int                 index;                      /* Char device major              */
+    struct cdev         cdev;                       /* Char device                    */
 
-void parse_cmdline (int argc, char **argv, init_struct *is);
-int check_init (init_struct *is);
-void arm_load_dnaos (slave_device *device, init_struct *is);
-void arm_load_kernel (slave_device *device, init_struct *is);
+    unsigned long       base_addr;                  /* Register file mapped address   */
+                                                    /*        - logical address       */
+    unsigned long       addr_core_thread_ec_cpus;
+};
+
+struct ecmgr_drv_driver
+{
+  int                   major;
+  int                   minor;
+  int                   nb_dev;
+  ecmgr_drv_device_t    devs[ECMGR_DRV_MAXDEV];
+};
 
 #endif
 
