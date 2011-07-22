@@ -206,7 +206,7 @@ open_host_file (rabbitsha_device_t *device)
 
 
 static int
-rabbitsha_chr_ioctl_open (rabbitsha_device_t *device, char *file_name)
+rabbitsha_chr_ioctl_open (rabbitsha_device_t *device, char __user *file_name)
 {
     long ret;
 
@@ -228,6 +228,7 @@ rabbitsha_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
 {
     rabbitsha_device_t *device;
     int                 ret = 0;
+    void __user *buf = (void __user *)buffer;
 
     device = file->private_data;
 
@@ -239,7 +240,7 @@ rabbitsha_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
 
     switch(code){
     case RABBITSHA_IOCSOPEN:
-        ret = rabbitsha_chr_ioctl_open (device, (char *) buffer);
+        ret = rabbitsha_chr_ioctl_open (device, buf);
         break;
     default:
         EMSG("ioctl(0x%x, 0x%lx) not implemented\n", code, buffer);
