@@ -34,7 +34,7 @@ struct ecmgr_drv_device
     int                 index;                      /* Char device major              */
     struct cdev         cdev;                       /* Char device                    */
 
-    unsigned long       base_addr;                  /* Register file mapped address   */
+    void __iomem		*base_addr;                  /* Register file mapped address   */
                                                     /*        - logical address       */
     unsigned long       addr_core_thread_ec_cpus;
 };

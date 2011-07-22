@@ -284,7 +284,7 @@ ecmgr_drv_dev_init (void)
         return -ENOMEM;
     else
     {
-        ecmgr_drv_dev->base_addr = (unsigned long) base_addr;
+        ecmgr_drv_dev->base_addr = base_addr;
         ecmgr_drv_dev->addr_core_thread_ec_cpus = readl (ecmgr_drv_dev->base_addr + ECMGR_REG_DNA_THREAD);
         MSG ("dna_core_thred address = %lu\n", ecmgr_drv_dev->addr_core_thread_ec_cpus);
     }
