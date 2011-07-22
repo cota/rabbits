@@ -56,7 +56,7 @@ MODULE_VERSION      ("0.0.1");
 static rabbitsfb_driver_t rabbitsfb_drv;
 
 static int     rabbitsfb_chr_open   (struct inode *, struct file *);
-static int     rabbitsfb_chr_ioctl  (struct inode *, struct file *, unsigned int, unsigned long);
+static long    rabbitsfb_chr_ioctl  (struct file *, unsigned int, unsigned long);
 static int     rabbitsfb_chr_release(struct inode *, struct file *);
 
 static ssize_t rabbitsfb_chr_read   (struct file *,       char __user *, size_t, loff_t *);
@@ -68,7 +68,7 @@ static struct file_operations rabbitsfb_chr_fops =
   .owner        = THIS_MODULE,
   .read         = rabbitsfb_chr_read,
   .write        = rabbitsfb_chr_write,
-  .ioctl        = rabbitsfb_chr_ioctl,
+  .unlocked_ioctl = rabbitsfb_chr_ioctl,
   .mmap         = rabbitsfb_chr_mmap,
   .open         = rabbitsfb_chr_open,
   .release      = rabbitsfb_chr_release,
@@ -195,7 +195,7 @@ do                                                                      \
     }                                                                   \
 } while (0)
 
-static int
+static long
 rabbitsfb_chr_ioctl_reset(rabbitsfb_device_t *dev)
 {
     return rabbitsfb_reset(dev);
@@ -324,9 +324,8 @@ rabbitsfb_chr_open(struct inode *inode, struct file *file)
     return 0;
 }
 
-static int
-rabbitsfb_chr_ioctl(struct inode *inode, struct file *file,
-					unsigned int code, unsigned long buffer)
+static long
+rabbitsfb_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
 {
     rabbitsfb_device_t *dev;
     int                 ret = 0;
