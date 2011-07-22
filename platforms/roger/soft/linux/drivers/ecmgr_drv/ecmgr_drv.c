@@ -54,7 +54,7 @@ MODULE_VERSION    ("0.0.1");
 static ecmgr_drv_driver_t ecmgr_drv;
 
 static int     ecmgr_drv_chr_open    (struct inode *, struct file *);
-static int     ecmgr_drv_chr_ioctl   (struct inode *, struct file *, unsigned int, unsigned long);
+static long    ecmgr_drv_chr_ioctl   (struct file *, unsigned int, unsigned long);
 static int     ecmgr_drv_chr_release (struct inode *, struct file *);
 
 static ssize_t ecmgr_drv_chr_read    (struct file *, char __user *, size_t, loff_t *);
@@ -66,7 +66,7 @@ static struct file_operations ecmgr_drv_chr_fops =
     .owner        = THIS_MODULE,
     .read         = ecmgr_drv_chr_read,
     .write        = ecmgr_drv_chr_write,
-    .ioctl        = ecmgr_drv_chr_ioctl,
+    .unlocked_ioctl = ecmgr_drv_chr_ioctl,
     .mmap         = ecmgr_drv_chr_mmap,
     .open         = ecmgr_drv_chr_open,
     .release      = ecmgr_drv_chr_release,
@@ -172,9 +172,8 @@ ecmgr_drv_chr_open (struct inode *inode, struct file *file)
     return 0;
 }
 
-static int
-ecmgr_drv_chr_ioctl (struct inode *inode, struct file *file, 
-    unsigned int code, unsigned long buffer)
+static long
+ecmgr_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
     ecmgr_drv_device_t          *dev = NULL;
