@@ -98,7 +98,7 @@ qemu_drv_chr_ioctl_reset (qemu_drv_device_t *dev)
 }
 
 static int
-qemu_drv_chr_ioctl_set_register_32 (qemu_drv_device_t *dev, void *user_buf, unsigned long reg_ofs)
+qemu_drv_chr_ioctl_set_register_32 (qemu_drv_device_t *dev, void __user *user_buf, unsigned long reg_ofs)
 {
     int                         ret = 0;
     unsigned long               val;
@@ -110,7 +110,7 @@ qemu_drv_chr_ioctl_set_register_32 (qemu_drv_device_t *dev, void *user_buf, unsi
 }
 
 static int
-qemu_drv_chr_ioctl_set_cpux_fv (qemu_drv_device_t *dev, void *user_buf)
+qemu_drv_chr_ioctl_set_cpux_fv (qemu_drv_device_t *dev, void __user *user_buf)
 {
     int                         ret = 0;
     qemu_ioc_set_cpux_fv_t      param;
@@ -137,7 +137,7 @@ qemu_drv_chr_ioctl_set_register_8 (qemu_drv_device_t *dev, void *user_buf, unsig
 }
 */
 static int
-qemu_drv_chr_ioctl_get_register_32 (qemu_drv_device_t *dev, void *user_buf, unsigned long reg_ofs)
+qemu_drv_chr_ioctl_get_register_32 (qemu_drv_device_t *dev, void __user *user_buf, unsigned long reg_ofs)
 {
     int                         ret = 0;
     unsigned long               val;
@@ -226,6 +226,7 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
     int                         ret = 0;
     qemu_drv_device_t           *dev = NULL;
     uint32_t                    val = 0; 
+    void __user *buf = (void __user *)buffer;
 
     dev  = file->private_data;
 
@@ -243,11 +244,11 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
             break;
         case QEMU_DRV_IOCS_SET_CPUS_FV:
             DMSG ("QEMU_DRV_IOCS_SET_CPUS_FV\n");
-            ret = qemu_drv_chr_ioctl_set_register_32 (dev, (void *) buffer, SET_SYSTEMC_ALL_FV_LEVEL);
+            ret = qemu_drv_chr_ioctl_set_register_32 (dev, buf, SET_SYSTEMC_ALL_FV_LEVEL);
             break;
         case QEMU_DRV_IOCS_SET_CPUX_FV:
             DMSG ("QEMU_DRV_IOCS_SET_CPUX_FV\n");
-            ret = qemu_drv_chr_ioctl_set_cpux_fv (dev, (void *) buffer);
+            ret = qemu_drv_chr_ioctl_set_cpux_fv (dev, buf);
             break;
 		case QEMU_DRV_IOC_MEASURE_STA:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STA\n");
@@ -258,7 +259,7 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 		case QEMU_DRV_IOC_MEASURE_STO:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STO\n");
 			/* val = 0xDEAD; /\* Magic value *\/  */
-			ret = qemu_drv_chr_ioctl_get_register_32 (dev, (void *) buffer, GET_MEASURE_RES);
+			ret = qemu_drv_chr_ioctl_get_register_32 (dev, buf, GET_MEASURE_RES);
 			DMSG("Got value : %x", val);
 			break;
 
