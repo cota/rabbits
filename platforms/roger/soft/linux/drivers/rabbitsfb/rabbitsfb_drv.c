@@ -396,7 +396,7 @@ rabbitsfb_chr_release(struct inode *inode, struct file *file)
     rabbitsfb_int_cleanup(dev);
     rabbitsfb_stop(dev);
 
-    file->private_data = 0;
+    file->private_data = NULL;
 
     return 0;
 }
