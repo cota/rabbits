@@ -51,7 +51,7 @@ MODULE_VERSION    ("0.0.1");
 static qemu_drv_driver_t qemu_drv_drv;
 
 static int     qemu_drv_chr_open    (struct inode *, struct file *);
-static int     qemu_drv_chr_ioctl   (struct inode *, struct file *, unsigned int, unsigned long);
+static long    qemu_drv_chr_ioctl   (struct file *, unsigned int, unsigned long);
 static int     qemu_drv_chr_release (struct inode *, struct file *);
 
 static ssize_t qemu_drv_chr_read    (struct file *, char __user *, size_t, loff_t *);
@@ -63,7 +63,7 @@ static struct file_operations qemu_drv_chr_fops =
     .owner        = THIS_MODULE,
     .read         = qemu_drv_chr_read,
     .write        = qemu_drv_chr_write,
-    .ioctl        = qemu_drv_chr_ioctl,
+    .unlocked_ioctl = qemu_drv_chr_ioctl,
     .mmap         = qemu_drv_chr_mmap,
     .open         = qemu_drv_chr_open,
     .release      = qemu_drv_chr_release,
@@ -220,8 +220,8 @@ qemu_drv_chr_ioctl_set_process_fv (unsigned long level)
 }
 
 
-static int
-qemu_drv_chr_ioctl (struct inode *inode, struct file *file, unsigned int code, unsigned long buffer)
+static long
+qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
     qemu_drv_device_t           *dev = NULL;
