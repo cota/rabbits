@@ -422,7 +422,7 @@ qemu_drv_dev_init (void)
     if (!base_addr)
         return -ENOMEM;
     else
-        qemu_drv_dev->base_addr = (unsigned long) base_addr;
+        qemu_drv_dev->base_addr = base_addr;
 
     /* setup char dev here */
     ret = qemu_drv_cdev_setup (qemu_drv_dev, qemu_drv_idx);
