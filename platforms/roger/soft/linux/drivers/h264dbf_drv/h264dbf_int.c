@@ -145,7 +145,7 @@ h264dbf_int_enable (h264dbf_device_t *dev)
     return 0;
 }
 
-void h264dbf_disable_device_irq (h264dbf_device_t *dev)
+static void h264dbf_disable_device_irq (h264dbf_device_t *dev)
 {
     unsigned long               qemu_intr_enabled;
 
