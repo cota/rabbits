@@ -25,6 +25,7 @@
 #include "rabbitsfb_types.h"
 #include "rabbitsfb_ioctl.h"
 #include "rabbitsfb_regs.h"
+#include "rabbitsfb_int.h"
 #include <qemu_wrapper_cts.h>
 
 #if 0
