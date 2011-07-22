@@ -48,7 +48,7 @@ MODULE_VERSION      ("0.0.1");
 static h264dbf_driver_t h264dbf_drv;
 
 static int     h264dbf_chr_open    (struct inode *, struct file *);
-static int     h264dbf_chr_ioctl   (struct inode *, struct file *, unsigned int, unsigned long);
+static long    h264dbf_chr_ioctl   (struct file *, unsigned int, unsigned long);
 static int     h264dbf_chr_release (struct inode *, struct file *);
 
 static ssize_t h264dbf_chr_read    (struct file *, char __user *, size_t, loff_t *);
@@ -60,7 +60,7 @@ static struct file_operations h264dbf_chr_fops =
     .owner        = THIS_MODULE,
     .read         = h264dbf_chr_read,
     .write        = h264dbf_chr_write,
-    .ioctl        = h264dbf_chr_ioctl,
+    .unlocked_ioctl = h264dbf_chr_ioctl,
     .mmap         = h264dbf_chr_mmap,
     .open         = h264dbf_chr_open,
     .release      = h264dbf_chr_release,
@@ -201,8 +201,8 @@ h264dbf_chr_open (struct inode *inode, struct file *file)
     return 0;
 }
 
-static int
-h264dbf_chr_ioctl (struct inode *inode, struct file *file, unsigned int code, unsigned long buffer)
+static long
+h264dbf_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
     h264dbf_device_t            *dev = NULL;
