@@ -252,8 +252,9 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
             break;
 		case QEMU_DRV_IOC_MEASURE_STA:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STA\n");
-			val = 0xC0DE; /* Magic value */
-			ret = qemu_drv_chr_ioctl_set_register_32 (dev, (void *) &val, SET_MEASURE_START);
+			/* 0xC0DE is a magic value */
+			val = 0xC0DE;
+			writel (val, dev->base_addr + SET_MEASURE_START);
 			break;
 			
 		case QEMU_DRV_IOC_MEASURE_STO:
