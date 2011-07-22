@@ -263,7 +263,7 @@ h264dbf_chr_release (struct inode *inode, struct file *file)
 
     h264dbf_int_cleanup (dev);
 
-    file->private_data = 0;
+    file->private_data = NULL;
 
     return 0;
 }
