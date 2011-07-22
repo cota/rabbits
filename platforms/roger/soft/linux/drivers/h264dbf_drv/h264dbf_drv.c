@@ -338,7 +338,7 @@ h264dbf_dev_init (void)
     if (!base_addr)
         return -ENOMEM;
     else
-        h264dbf_dev->base_addr = (unsigned long) base_addr;
+        h264dbf_dev->base_addr = base_addr;
 
     DMSG ("Got a base_addr : 0x%08lx\n", (unsigned long) base_addr);
 
@@ -356,7 +356,7 @@ h264dbf_dev_exit(h264dbf_device_t *h264dbf_dev)
     h264dbf_cdev_release (h264dbf_dev);
     h264dbf_int_cleanup (h264dbf_dev);
 
-    iounmap ((void *) h264dbf_dev->base_addr);
+    iounmap (h264dbf_dev->base_addr);
 
     return 0;
 }
