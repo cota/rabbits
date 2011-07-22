@@ -74,7 +74,7 @@ static struct file_operations rabbitsfb_chr_fops =
   .release      = rabbitsfb_chr_release,
 };
 
-int
+static int
 rabbitsfb_stop(rabbitsfb_device_t *dev)
 {
 
@@ -87,7 +87,7 @@ rabbitsfb_stop(rabbitsfb_device_t *dev)
     return 0;
 }
 
-int
+static int
 rabbitsfb_reset(rabbitsfb_device_t *dev)
 {
 
@@ -102,7 +102,7 @@ rabbitsfb_reset(rabbitsfb_device_t *dev)
     return 0;
 }
 
-int
+static int
 rabbitsfb_set_size(rabbitsfb_device_t *dev, rabbitsfb_ioc_size_t *sz)
 {
     u32                       val;
@@ -116,7 +116,7 @@ rabbitsfb_set_size(rabbitsfb_device_t *dev, rabbitsfb_ioc_size_t *sz)
     return ret;
 }
 
-int
+static int
 rabbitsfb_set_addr(rabbitsfb_device_t *dev, rabbitsfb_ioc_addr_t *addr)
 {
     int                     ret = 0;
@@ -128,7 +128,7 @@ rabbitsfb_set_addr(rabbitsfb_device_t *dev, rabbitsfb_ioc_addr_t *addr)
     return ret;
 }
 
-int
+static int
 rabbitsfb_dma_enable(rabbitsfb_device_t *dev)
 {
     int ret = 0;
@@ -143,7 +143,7 @@ rabbitsfb_dma_enable(rabbitsfb_device_t *dev)
     return ret;
 }
 
-int
+static int
 rabbitsfb_display(rabbitsfb_device_t *dev)
 {
     int ret = 0;
@@ -158,7 +158,7 @@ rabbitsfb_display(rabbitsfb_device_t *dev)
     return ret;
 }
 
-int
+static int
 rabbitsfb_set_mode(rabbitsfb_device_t *dev, rabbitsfb_ioc_mode_t *mode)
 {
     int ret = 0;

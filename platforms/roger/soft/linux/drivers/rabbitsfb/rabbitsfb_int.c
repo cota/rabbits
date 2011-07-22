@@ -133,7 +133,7 @@ rabbitsfb_int_enable(rabbitsfb_device_t *dev)
     return 0;
 }
 
-void rabbitsfb_disable_device_irq(rabbitsfb_device_t *dev)
+static void rabbitsfb_disable_device_irq(rabbitsfb_device_t *dev)
 {
     unsigned long qemu_intr_enabled;
     unsigned long fb_old_status;
