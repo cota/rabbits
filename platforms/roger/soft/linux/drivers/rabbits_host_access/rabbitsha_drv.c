@@ -55,7 +55,7 @@ MODULE_VERSION      ("0.0.1");
 static rabbitsha_driver_t rabbitsha_drv;
 
 static int     rabbitsha_chr_open   (struct inode *, struct file *);
-static int     rabbitsha_chr_ioctl  (struct inode *, struct file *, unsigned int, unsigned long);
+static long    rabbitsha_chr_ioctl  (struct file *, unsigned int, unsigned long);
 static int     rabbitsha_chr_release(struct inode *, struct file *);
 
 static ssize_t rabbitsha_chr_read   (struct file *,       char __user *, size_t, loff_t *);
@@ -68,7 +68,7 @@ static struct file_operations rabbitsha_chr_fops =
   .read         = rabbitsha_chr_read,
   .write        = rabbitsha_chr_write,
   .llseek       = rabbitsha_chr_llseek,
-  .ioctl        = rabbitsha_chr_ioctl,
+  .unlocked_ioctl = rabbitsha_chr_ioctl,
   .open         = rabbitsha_chr_open,
   .release      = rabbitsha_chr_release,
 };
@@ -222,9 +222,8 @@ rabbitsha_chr_ioctl_open (rabbitsha_device_t *device, char *file_name)
     return open_host_file (device);
 }
 
-static int
-rabbitsha_chr_ioctl(struct inode *inode, struct file *file,
-					unsigned int code, unsigned long buffer)
+static long
+rabbitsha_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
 {
     rabbitsha_device_t *device;
     int                 ret = 0;
