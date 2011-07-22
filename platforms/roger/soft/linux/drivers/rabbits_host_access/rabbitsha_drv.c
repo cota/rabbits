@@ -460,7 +460,7 @@ rabbitsha_dev_init(void)
     if(!base_addr)
         return -ENOMEM;
     else
-        rabbitsha_dev->base_addr = (unsigned long)base_addr;
+        rabbitsha_dev->base_addr = base_addr;
 
     DMSG("Got a base_addr : 0x%08lx\n", (unsigned long) base_addr);
 
@@ -475,7 +475,7 @@ rabbitsha_dev_exit(rabbitsha_device_t *rabbitsha_dev)
 {
     rabbitsha_cdev_release(rabbitsha_dev);
 
-    iounmap((void *)rabbitsha_dev->base_addr);
+    iounmap(rabbitsha_dev->base_addr);
     if (rabbitsha_dev->buffer)
         kfree (rabbitsha_dev->buffer);
 

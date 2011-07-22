@@ -62,7 +62,7 @@ struct rabbitsha_device {
     int               index;                  /* Char device major            */
     struct cdev       cdev;                   /* Char device                  */
 
-    unsigned long     base_addr;              /* Register file mapped address */
+    void __iomem	  *base_addr;              /* Register file mapped address */
                                               /*        - logical address     */
     char              *buffer;
     int               state;
