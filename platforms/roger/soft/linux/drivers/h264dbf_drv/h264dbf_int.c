@@ -24,7 +24,7 @@
 #include "h264dbf_types.h"
 #include "h264dbf_ioctl.h"
 #include "h264dbf_regs.h"
-#include "qemu_wrapper_cts.h"
+#include <qemu_wrapper_cts.h>
 
 #define DEBUG
 

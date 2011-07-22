@@ -1,0 +1,4 @@
+EXTRA_CFLAGS     := -I${RABBITS_DIR}/rabbits/components/qemu_wrapper
+
+obj-m            := h264dbf.o
+h264dbf-objs     := h264dbf_drv.o h264dbf_int.o
