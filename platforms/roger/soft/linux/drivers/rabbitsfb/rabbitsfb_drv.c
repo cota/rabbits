@@ -20,6 +20,7 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
@@ -414,6 +415,7 @@ rabbitsfb_chr_write(struct file *file, const char __user *data,
 					size_t size, loff_t *loff)
 {
     rabbitsfb_device_t *dev = (rabbitsfb_device_t *)file->private_data;
+    char *buf;
 
 
     DMSG("write() %x bytes from 0x%08x\n", size, (unsigned int)data);
@@ -422,10 +424,19 @@ rabbitsfb_chr_write(struct file *file, const char __user *data,
         EMSG("Bad write()\n");
     }
 
-    memcpy_toio((void *)dev->mem_addr, (void *)data, size);
+    buf = kmalloc(size, GFP_KERNEL);
+    if (buf == NULL)
+        return -ENOMEM;
+    if (copy_from_user(buf, data, size)) {
+        kfree(buf);
+        return -EFAULT;
+    }
+
+    memcpy_toio(dev->mem_addr, buf, size);
 
     DMSG("write() done\n");
 
+    kfree(buf);
     return 0;
 }
 
