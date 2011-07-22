@@ -1,0 +1,4 @@
+EXTRA_CFLAGS     :=
+
+obj-m            := rabbitsha.o
+rabbitsha-objs   := rabbitsha_drv.o
