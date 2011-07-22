@@ -1,1 +1,8 @@
 logs
+*.mod.c
+*.o
+*.cmd
+*.ko
+.tmp_versions
+*.order
+*.symvers
