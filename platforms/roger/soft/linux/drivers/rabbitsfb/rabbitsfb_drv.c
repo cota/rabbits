@@ -202,7 +202,7 @@ rabbitsfb_chr_ioctl_reset(rabbitsfb_device_t *dev)
 }
 
 static int
-rabbitsfb_chr_ioctl_setsize(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_setsize(rabbitsfb_device_t *dev, void __user *buf)
 {
     int                  ret = 0;
     rabbitsfb_ioc_size_t sz;
@@ -214,7 +214,7 @@ rabbitsfb_chr_ioctl_setsize(rabbitsfb_device_t *dev, void *buf)
 }
 
 static int
-rabbitsfb_chr_ioctl_setaddr(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_setaddr(rabbitsfb_device_t *dev, void __user *buf)
 {
     rabbitsfb_ioc_addr_t addr;
     int                  ret = 0;
@@ -226,7 +226,7 @@ rabbitsfb_chr_ioctl_setaddr(rabbitsfb_device_t *dev, void *buf)
 }
 
 static int
-rabbitsfb_chr_ioctl_irq_register(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_irq_register(rabbitsfb_device_t *dev, void __user *buf)
 {
     rabbitsfb_ioc_irq_t irq;
     int                 ret = 0;
@@ -238,7 +238,7 @@ rabbitsfb_chr_ioctl_irq_register(rabbitsfb_device_t *dev, void *buf)
 }
 
 static int
-rabbitsfb_chr_ioctl_irq_wait(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_irq_wait(rabbitsfb_device_t *dev, void __user *buf)
 {
     rabbitsfb_ioc_irq_t irq;
     int                 ret = 0;
@@ -250,7 +250,7 @@ rabbitsfb_chr_ioctl_irq_wait(rabbitsfb_device_t *dev, void *buf)
 }
 
 static int
-rabbitsfb_chr_ioctl_irq_unregister(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_irq_unregister(rabbitsfb_device_t *dev, void __user *buf)
 {
     rabbitsfb_ioc_irq_t irq;
     int                 ret = 0;
@@ -274,7 +274,7 @@ rabbitsfb_chr_ioctl_display(rabbitsfb_device_t *dev)
 }
 
 static int
-rabbitsfb_chr_ioctl_setmode(rabbitsfb_device_t *dev, void *buf)
+rabbitsfb_chr_ioctl_setmode(rabbitsfb_device_t *dev, void __user *buf)
 {
     rabbitsfb_ioc_mode_t mode;
     int                  ret = 0;
@@ -329,6 +329,7 @@ rabbitsfb_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
 {
     rabbitsfb_device_t *dev;
     int                 ret = 0;
+    void __user *buf = (void __user *)buffer;
 
     dev = file->private_data;
 
@@ -345,23 +346,23 @@ rabbitsfb_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
         break;
     case RABBITSFB_IOCSSIZE:
         DMSG("RABBITSFB_IOCSSIZE\n");
-        ret = rabbitsfb_chr_ioctl_setsize(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_setsize(dev, buf);
         break;
     case RABBITSFB_IOCSADDR:
         DMSG("RABBITSFB_IOCSADDR\n");
-        ret = rabbitsfb_chr_ioctl_setaddr(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_setaddr(dev, buf);
         break;
     case RABBITSFB_IOCSIRQREG:
         DMSG("RABBITSFB_IOCSIRQREG\n");
-        ret = rabbitsfb_chr_ioctl_irq_register(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_irq_register(dev, buf);
         break;
     case RABBITSFB_IOCSIRQWAIT:
         DMSG("RABBITSFB_IOCSIRQWAIT\n");
-        ret = rabbitsfb_chr_ioctl_irq_wait(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_irq_wait(dev, buf);
         break;
     case RABBITSFB_IOCSIRQUNREG:
         DMSG("RABBITSFB_IOCSIRQUNREG\n");
-        ret = rabbitsfb_chr_ioctl_irq_unregister(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_irq_unregister(dev, buf);
         break;
     case RABBITSFB_IOCDMAEN:
         DMSG("RABBITSFB_IOCDMAEN\n");
@@ -373,7 +374,7 @@ rabbitsfb_chr_ioctl(struct file *file, unsigned int code, unsigned long buffer)
         break;
     case RABBITSFB_IOCSMODE:
         DMSG("RABBITSFB_IOCSMODE\n");
-        ret = rabbitsfb_chr_ioctl_setmode(dev, (void *)buffer);
+        ret = rabbitsfb_chr_ioctl_setmode(dev, buf);
         break;
 
     default:
