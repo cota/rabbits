@@ -74,12 +74,6 @@ static struct file_operations rabbitsha_chr_fops =
   .release      = rabbitsha_chr_release,
 };
 
-int
-rabbitsha_stop(rabbitsha_device_t *dev)
-{
-    return 0;
-}
-
 /*
  * ioctl() Handling
  */
