@@ -43,9 +43,9 @@ struct rabbitsfb_device {
     int               index;                  /* Char device major            */
     struct cdev       cdev;                   /* Char device                  */
 
-    unsigned long     base_addr;              /* Register file mapped address */
+    void __iomem	 *base_addr;              /* Register file mapped address */
                                               /*        - logical address     */
-    unsigned long     mem_addr;               /* Memory mapped address        */
+    void __iomem	 *mem_addr;               /* Memory mapped address        */
                                               /*        - logical address     */
 
     spinlock_t        irq_lock;               /* IRQ spinlock                 */

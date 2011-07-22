@@ -520,12 +520,12 @@ rabbitsfb_dev_init(void)
     if(!base_addr)
         return -ENOMEM;
     else
-        rabbitsfb_dev->base_addr = (unsigned long)base_addr;
+        rabbitsfb_dev->base_addr = base_addr;
 
     if(!mem_addr)
         return -ENOMEM;
     else
-        rabbitsfb_dev->mem_addr = (unsigned long)mem_addr;
+        rabbitsfb_dev->mem_addr = mem_addr;
 
     DMSG("Got a base_addr : 0x%08lx\n", (unsigned long)base_addr);
     DMSG("Got a mem_addr : 0x%08lx\n", (unsigned long)mem_addr);
@@ -544,8 +544,8 @@ rabbitsfb_dev_exit(rabbitsfb_device_t *rabbitsfb_dev)
     rabbitsfb_cdev_release(rabbitsfb_dev);
     rabbitsfb_int_cleanup(rabbitsfb_dev);
 
-    iounmap((void *)rabbitsfb_dev->base_addr);
-    iounmap((void *)rabbitsfb_dev->mem_addr);
+    iounmap(rabbitsfb_dev->base_addr);
+    iounmap(rabbitsfb_dev->mem_addr);
 
     return 0;
 }
