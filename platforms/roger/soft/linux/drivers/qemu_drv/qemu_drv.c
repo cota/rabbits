@@ -225,7 +225,6 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
     qemu_drv_device_t           *dev = NULL;
-    uint32_t                    val = 0; 
     void __user *buf = (void __user *)buffer;
 
     dev  = file->private_data;
@@ -253,15 +252,12 @@ qemu_drv_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 		case QEMU_DRV_IOC_MEASURE_STA:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STA\n");
 			/* 0xC0DE is a magic value */
-			val = 0xC0DE;
-			writel (val, dev->base_addr + SET_MEASURE_START);
+			writel (0xC0DE, dev->base_addr + SET_MEASURE_START);
 			break;
 			
 		case QEMU_DRV_IOC_MEASURE_STO:
 			DMSG("QEMU_DRV_IOCS_MEASURE_STO\n");
-			/* val = 0xDEAD; /\* Magic value *\/  */
 			ret = qemu_drv_chr_ioctl_get_register_32 (dev, buf, GET_MEASURE_RES);
-			DMSG("Got value : %x", val);
 			break;
 
         case QEMU_DRV_IOC_TEST:
