@@ -208,7 +208,7 @@ ecmgr_drv_chr_release (struct inode *inode, struct file *file)
 {
     DMSG ("release() major %d minor %d\n", MAJOR (inode->i_rdev), MINOR (inode->i_rdev));
 
-    file->private_data = 0;
+    file->private_data = NULL;
 
     return 0;
 }
