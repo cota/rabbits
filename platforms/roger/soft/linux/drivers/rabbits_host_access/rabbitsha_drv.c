@@ -256,7 +256,7 @@ rabbitsha_chr_release(struct inode *inode, struct file *file)
 		 MAJOR(inode->i_rdev), MINOR(inode->i_rdev), device->state);
 
     device->open_count --;
-    file->private_data = 0;
+    file->private_data = NULL;
 
     switch (device->state)
     {
