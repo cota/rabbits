@@ -95,7 +95,7 @@ h264dbf_chr_ioctl_reset(h264dbf_device_t *dev)
 }
 
 static int
-h264dbf_chr_ioctl_irq_register(h264dbf_device_t *dev, void *buf)
+h264dbf_chr_ioctl_irq_register(h264dbf_device_t *dev, void __user *buf)
 {
     int                     ret = 0;
     h264dbf_ioc_irq_t        irq;
@@ -107,7 +107,7 @@ h264dbf_chr_ioctl_irq_register(h264dbf_device_t *dev, void *buf)
 }
 
 static int
-h264dbf_chr_ioctl_irq_wait(h264dbf_device_t *dev, void *buf)
+h264dbf_chr_ioctl_irq_wait(h264dbf_device_t *dev, void __user *buf)
 {
     int                     ret = 0;
     h264dbf_ioc_irq_t      irq;
@@ -119,7 +119,7 @@ h264dbf_chr_ioctl_irq_wait(h264dbf_device_t *dev, void *buf)
 }
 
 static int
-h264dbf_chr_ioctl_irq_unregister(h264dbf_device_t *dev, void *buf)
+h264dbf_chr_ioctl_irq_unregister(h264dbf_device_t *dev, void __user *buf)
 {
     int                       ret = 0;
     h264dbf_ioc_irq_t          irq;
@@ -131,7 +131,7 @@ h264dbf_chr_ioctl_irq_unregister(h264dbf_device_t *dev, void *buf)
 }
 
 static int
-h264dbf_chr_ioctl_set_register_32 (h264dbf_device_t *dev, void *user_buf, unsigned long reg_ofs)
+h264dbf_chr_ioctl_set_register_32 (h264dbf_device_t *dev, void __user *user_buf, unsigned long reg_ofs)
 {
     int                         ret = 0;
     unsigned long               val;
@@ -143,7 +143,7 @@ h264dbf_chr_ioctl_set_register_32 (h264dbf_device_t *dev, void *user_buf, unsign
 }
 
 static int
-h264dbf_chr_ioctl_set_register_8 (h264dbf_device_t *dev, void *user_buf, unsigned long reg_ofs)
+h264dbf_chr_ioctl_set_register_8 (h264dbf_device_t *dev, void __user *user_buf, unsigned long reg_ofs)
 {
     int                         ret = 0;
     unsigned char               val;
@@ -155,7 +155,7 @@ h264dbf_chr_ioctl_set_register_8 (h264dbf_device_t *dev, void *user_buf, unsigne
 }
 
 static int
-h264dbf_chr_ioctl_get_register_8 (h264dbf_device_t *dev, void *user_buf, unsigned long reg_ofs)
+h264dbf_chr_ioctl_get_register_8 (h264dbf_device_t *dev, void __user *user_buf, unsigned long reg_ofs)
 {
     int                         ret = 0;
     unsigned char               val;
@@ -206,6 +206,7 @@ h264dbf_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
 {
     int                         ret = 0;
     h264dbf_device_t            *dev = NULL;
+    void __user *buf = (void __user *)buffer;
 
     dev  = file->private_data;
 
@@ -223,27 +224,27 @@ h264dbf_chr_ioctl (struct file *file, unsigned int code, unsigned long buffer)
         break;
     case H264DBF_IOCSIRQREG:
         DMSG ("H264DBF_IOCSIRQREG\n");
-        ret = h264dbf_chr_ioctl_irq_register (dev, (void *) buffer);
+        ret = h264dbf_chr_ioctl_irq_register (dev, buf);
         break;
     case H264DBF_IOCSIRQWAIT:
         DMSG ("H264DBF_IOCSIRQWAIT\n");
-        ret = h264dbf_chr_ioctl_irq_wait (dev, (void *) buffer);
+        ret = h264dbf_chr_ioctl_irq_wait (dev, buf);
         break;
     case H264DBF_IOCSIRQUNREG:
         DMSG ("H264DBF_IOCSIRQUNREG\n");
-        ret = h264dbf_chr_ioctl_irq_unregister (dev, (void *) buffer);
+        ret = h264dbf_chr_ioctl_irq_unregister (dev, buf);
         break;
     case H264DBF_IOCS_SET_TRANSFER_ADDR:
         DMSG ("H264DBF_IOCS_SET_TRANSFER_ADDR\n");
-        ret = h264dbf_chr_ioctl_set_register_32 (dev, (void *) buffer, REG_SRAM_ADDRESS);
+        ret = h264dbf_chr_ioctl_set_register_32 (dev, buf, REG_SRAM_ADDRESS);
         break;
     case H264DBF_IOCS_SET_NSLICES_INTR:
         DMSG ("H264DBF_IOCS_SET_NSLICES_INTR\n");
-        ret = h264dbf_chr_ioctl_set_register_8 (dev, (void *) buffer, REG_NSLICES_INTR);
+        ret = h264dbf_chr_ioctl_set_register_8 (dev, buf, REG_NSLICES_INTR);
         break;
     case H264DBF_IOCS_GET_HW_NSLICES:
         DMSG ("H264DBF_IOCS_GET_HW_NSLICES\n");
-        ret = h264dbf_chr_ioctl_get_register_8 (dev, (void *) buffer, REG_NSLICES);
+        ret = h264dbf_chr_ioctl_get_register_8 (dev, buf, REG_NSLICES);
         break;
     default:
         EMSG ("ioctl(0x%x, 0x%lx) not implemented\n", code, buffer);
