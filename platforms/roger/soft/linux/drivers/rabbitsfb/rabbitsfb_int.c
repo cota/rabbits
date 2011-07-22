@@ -18,6 +18,7 @@
  */
 
 #include <linux/interrupt.h>
+#include <linux/sched.h>
 #include <linux/io.h>
 #include <mach/hardware.h>
 
