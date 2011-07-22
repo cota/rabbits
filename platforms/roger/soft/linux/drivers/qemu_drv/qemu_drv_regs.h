@@ -20,7 +20,7 @@
 #ifndef _QEMU_DRV_REGS_H
 #define _QEMU_DRV_REGS_H
 
-#include "qemu_wrapper_cts.h"
+#include <qemu_wrapper_cts.h>
 
 #endif /* _QEMU_DRV_REGS_H */
 

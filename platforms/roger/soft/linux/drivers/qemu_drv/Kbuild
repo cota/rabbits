@@ -1,0 +1,4 @@
+EXTRA_CFLAGS     := -I${RABBITS_DIR}/rabbits/components/qemu_wrapper
+
+obj-m            := qemu.o
+qemu-objs        := qemu_drv.o
