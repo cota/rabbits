@@ -66,7 +66,7 @@ int sc_main (int argc, char ** argv)
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
     is.no_cpus = 3;
-    is.ramsize = 128 * 1024 * 1024;
+    is.ramsize = 256 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
         return 1;
@@ -129,7 +129,7 @@ int sc_main (int argc, char ** argv)
     //masters
     qemu_wrapper qemu1 ("QEMU1", 0, no_irqs, int_cpu_mask, is.no_cpus, 
                         is.cpu_family, is.cpu_model, is.ramsize);
-    qemu1.add_map(0xA0000000, 0x10000000); // (base address, size)
+    qemu1.add_map(0xA0000000, 0x20000000); // (base address, size)
     qemu1.set_base_address (QEMU_ADDR_BASE);
     for(i = 0; i < no_irqs; i++)
         qemu1.interrupt_ports[i] (wires_irq_qemu[i]);
