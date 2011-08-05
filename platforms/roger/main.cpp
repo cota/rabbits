@@ -65,7 +65,7 @@ int sc_main (int argc, char ** argv)
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 3;
+    is.no_cpus = 4;
     is.ramsize = 256 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
