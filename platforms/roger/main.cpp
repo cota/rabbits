@@ -250,18 +250,6 @@ void memory_mark_exclusive (int cpu, unsigned long addr)
         mem_exclusive[no_mem_exclusive].addr = addr;
         mem_exclusive[no_mem_exclusive].cpu = cpu;
         no_mem_exclusive++;
-
-        if (no_mem_exclusive > is.no_cpus)
-        {
-            printf ("Warning: number of elements in the exclusive list (%d) > cpus (%d) (list: ",
-                no_mem_exclusive, is.no_cpus);
-            for (i = 0; i < no_mem_exclusive; i++)
-                printf ("%lx ", mem_exclusive[i].addr);
-            printf (")\n");
-            if (is.gdb_port > 0)
-                kill (0, SIGINT);
-
-        }
     }
 }
 
