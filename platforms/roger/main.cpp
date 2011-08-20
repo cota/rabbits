@@ -232,25 +232,40 @@ extern "C"
 {
 
 unsigned char   dummy_for_invalid_address[256];
-struct mem_exclusive_t {unsigned long addr; int cpu;} mem_exclusive[100];
+struct mem_exclusive_t {unsigned long addr; int cpus;} mem_exclusive[100];
 int no_mem_exclusive = 0;
+
+#define idx_to_bit(idx)	(1 << (idx))
 
 void memory_mark_exclusive (int cpu, unsigned long addr)
 {
+    mem_exclusive_t *entry;
     int             i;
 
     addr &= 0xFFFFFFFC;
 
-    for (i = 0; i < no_mem_exclusive; i++)
-        if (addr == mem_exclusive[i].addr)
-            break;
-    
-    if (i >= no_mem_exclusive)
-    {
-        mem_exclusive[no_mem_exclusive].addr = addr;
-        mem_exclusive[no_mem_exclusive].cpu = cpu;
-        no_mem_exclusive++;
+    for (i = 0; i < no_mem_exclusive; i++) {
+        entry = &mem_exclusive[i];
+
+        if (entry->addr == addr) {
+            entry->cpus |= idx_to_bit(cpu);
+            return;
+        }
     }
+
+    entry = &mem_exclusive[no_mem_exclusive];
+    entry->addr = addr;
+    entry->cpus = idx_to_bit(cpu);
+    no_mem_exclusive++;
+}
+
+static int delete_entry(int i)
+{
+    for (; i < no_mem_exclusive - 1; i++) {
+            mem_exclusive[i].addr	= mem_exclusive[i + 1].addr;
+            mem_exclusive[i].cpus	= mem_exclusive[i + 1].cpus;
+        }
+    no_mem_exclusive--;
 }
 
 int memory_test_exclusive (int cpu, unsigned long addr)
@@ -259,10 +274,18 @@ int memory_test_exclusive (int cpu, unsigned long addr)
 
     addr &= 0xFFFFFFFC;
 
-    for (i = 0; i < no_mem_exclusive; i++)
-        if (addr == mem_exclusive[i].addr)
-            return (cpu != mem_exclusive[i].cpu);
-    
+    for (i = 0; i < no_mem_exclusive; i++) {
+        mem_exclusive_t *entry = &mem_exclusive[i];
+
+        if (entry->addr == addr) {
+            if (entry->cpus & idx_to_bit(cpu)) {
+                delete_entry(i);
+                return 0;
+            }
+            break;
+        }
+    }
+
     return 1;
 }
 
@@ -272,26 +295,15 @@ void memory_clear_exclusive (int cpu, unsigned long addr)
 
     addr &= 0xFFFFFFFC;
 
-    for (i = 0; i < no_mem_exclusive; i++)
-        if (addr == mem_exclusive[i].addr)
+    for (i = 0; i < no_mem_exclusive; i++) {
+        mem_exclusive_t *entry = &mem_exclusive[i];
+
+        if (entry->addr == addr)
         {
-            for (; i < no_mem_exclusive - 1; i++)
-            {
-                mem_exclusive[i].addr = mem_exclusive[i + 1].addr;
-                mem_exclusive[i].cpu = mem_exclusive[i + 1].cpu;
-            }
-            
-            no_mem_exclusive--;
+            delete_entry(i);
             return;
         }
-
-    printf ("Warning in %s: cpu %d not in the exclusive list: ",
-        __FUNCTION__, cpu);
-    for (i = 0; i < no_mem_exclusive; i++)
-        printf ("(%lx, %d) ", mem_exclusive[i].addr, mem_exclusive[i].cpu);
-    printf ("\n");
-    if (is.gdb_port > 0)
-        kill (0, SIGINT);
+    }
 }
 
 unsigned char   *systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr)
