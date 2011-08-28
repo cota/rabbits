@@ -277,7 +277,7 @@ CONFIG_ALIGNMENT_TRAP=y
 #
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="mem=128M root=/dev/ram console=ttyAMA0"
+CONFIG_CMDLINE="mem=256M root=/dev/ram console=ttyAMA0"
 # CONFIG_XIP_KERNEL is not set
 # CONFIG_KEXEC is not set
 
