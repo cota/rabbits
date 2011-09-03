@@ -231,12 +231,14 @@ unsigned char* systemc_get_sram_mem_addr ()
 extern "C"
 {
 
+#define MAX_MEMEXCL	100
+
 unsigned char   dummy_for_invalid_address[256];
 
 struct mem_exclusive_t {
     unsigned long addr;
     int cpus;
-} mem_exclusive[100];
+} mem_exclusive[MAX_MEMEXCL];
 
 int no_mem_exclusive = 0;
 
@@ -262,6 +264,10 @@ void memory_mark_exclusive (int cpu, unsigned long addr)
     entry->addr = addr;
     entry->cpus = idx_to_bit(cpu);
     no_mem_exclusive++;
+    if (no_mem_exclusive >= MAX_MEMEXCL) {
+        fprintf(stderr, "Error: reached max. number of mem_exclusive entries\n");
+        exit(1);
+    }
 }
 
 static int delete_entry(int i)
