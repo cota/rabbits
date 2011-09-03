@@ -232,7 +232,12 @@ extern "C"
 {
 
 unsigned char   dummy_for_invalid_address[256];
-struct mem_exclusive_t {unsigned long addr; int cpus;} mem_exclusive[100];
+
+struct mem_exclusive_t {
+    unsigned long addr;
+    int cpus;
+} mem_exclusive[100];
+
 int no_mem_exclusive = 0;
 
 #define idx_to_bit(idx)	(1 << (idx))
