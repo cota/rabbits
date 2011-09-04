@@ -65,9 +65,6 @@ extern "C"
     extern unsigned long long systemc_qemu_get_time ();
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
     extern unsigned long systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this);
-    extern void memory_mark_exclusive (int cpu, unsigned long addr);
-    extern int memory_test_exclusive (int cpu, unsigned long addr);
-    extern void memory_clear_exclusive (int cpu, unsigned long addr);
     extern void wait_wb_empty (qemu_cpu_wrapper_t *_this);
     extern unsigned long    no_cycles_cpu0;
 }
@@ -122,9 +119,6 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node,
     sc_exp_fcs.systemc_qemu_get_time = (systemc_qemu_get_time_fc_t) systemc_qemu_get_time;
     sc_exp_fcs.systemc_get_mem_addr = (systemc_get_mem_addr_fc_t) systemc_get_mem_addr;
     sc_exp_fcs.systemc_qemu_get_crt_thread = (systemc_qemu_get_crt_thread_fc_t) systemc_qemu_get_crt_thread;
-    sc_exp_fcs.memory_mark_exclusive = memory_mark_exclusive;
-    sc_exp_fcs.memory_test_exclusive = memory_test_exclusive;
-    sc_exp_fcs.memory_clear_exclusive = memory_clear_exclusive;
     sc_exp_fcs.wait_wb_empty = (wait_wb_empty_fc_t) wait_wb_empty;
     sc_exp_fcs.no_cycles_cpu0 = &no_cycles_cpu0;
 
