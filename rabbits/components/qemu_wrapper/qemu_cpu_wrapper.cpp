@@ -709,6 +709,11 @@ extern "C"
         return sc_time_stamp ().value () / 1000;
     }
 
+    uint64 systemc_qemu_get_no_cycles(qemu_cpu_wrapper_t *_this)
+    {
+        return _this->get_no_cycles();
+    }
+
     unsigned long
     systemc_qemu_get_crt_thread (qemu_cpu_wrapper_t *_this)
     {
