@@ -29,6 +29,8 @@
 #define OOB_CACHE_HIT		0x1
 #define OOB_CACHE_MISS		0x2
 
+#define NOC_DELAY_NS		15
+
 namespace noc
 {
 

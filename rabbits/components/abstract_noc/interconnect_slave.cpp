@@ -63,7 +63,7 @@ void interconnect_slave::dispatch_responses_thread ()
     {
         rsp = m_queue_responses->Read ();
 
-        wait (1, SC_NS);
+        wait (NOC_DELAY_NS, SC_NS);
 
         master = m_parent->get_master (rsp.rsrcid);
         if (master == NULL)
