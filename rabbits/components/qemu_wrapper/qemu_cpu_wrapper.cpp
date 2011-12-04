@@ -78,7 +78,7 @@ qemu_cpu_wrapper::qemu_cpu_wrapper (sc_module_name name,
         ((double) 1000) / m_logs->m_cpu_fvs[m_logs->m_cpu_nb_fv_levels - 1];
     m_crt_cpu_thread = 0;
     m_no_total_cycles = 0;
-    m_unblocking_write = 1;
+    m_unblocking_write = 0;
     m_swi = 0;
 
     m_cpuenv = m_qemu_import->qemu_get_set_cpu_obj (m_qemu_instance, cpuindex, this);
