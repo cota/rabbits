@@ -23,6 +23,8 @@
 
 //#define DEBUG_MEM
 
+#define MEM_DELAY_NS		90
+
 #ifdef DEBUG_MEM
 #define DPRINTF(fmt, args...)                   \
     do { printf(fmt , ##args); } while (0)
@@ -57,7 +59,7 @@ void mem_device::write (unsigned long ofs, unsigned char be, unsigned char *data
     int                 err = 0;
 
     bErr = false;
-    wait (1, SC_NS);
+    wait (MEM_DELAY_NS, SC_NS);
 
     if (ofs > size || be == 0)
         err = 1;
@@ -159,7 +161,7 @@ void mem_device::read (unsigned long ofs, unsigned char be, unsigned char *data,
         DPRINTF("read burst rsp: 0x%08x, mem 0x%08x, ofs 0x%lx be_off 0x%x\n",
                 *(uint32_t *)(data + be_off), (int)mem, ofs, be_off);
 
-        wait (3 * this->m_req.plen, SC_NS);
+        wait (MEM_DELAY_NS, SC_NS);
     }
     else
     {
@@ -223,7 +225,7 @@ void mem_device::read (unsigned long ofs, unsigned char be, unsigned char *data,
             bErr = true;
         }
 
-        wait (3, SC_NS);
+        wait (MEM_DELAY_NS, SC_NS);
     }
 }
 
