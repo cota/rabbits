@@ -25,6 +25,10 @@
 #include <stdint.h>
 #include <systemc.h>
 
+#define OOB_NONE			0x0
+#define OOB_CACHE_HIT		0x1
+#define OOB_CACHE_MISS		0x2
+
 namespace noc
 {
 
@@ -84,6 +88,7 @@ namespace noc
         // **************
         // Extra field
         uint8_t   rbe;
+        uint8_t   oob; /* Out of Band data */
     };
 
     template <typename T>

@@ -35,7 +35,7 @@ private:
     void request_thread ();
 
 public:
-    void send_rsp (bool bErr);
+    void send_rsp (bool bErr, uint8_t oob);
 
     // Slave modules have to implement the recieve function ...
     virtual void rcv_rqst (unsigned long ofs, unsigned char be,

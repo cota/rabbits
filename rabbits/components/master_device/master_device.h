@@ -40,7 +40,7 @@ public:
 
     // Master modules have to implement the recieve function ...
     virtual void rcv_rsp(unsigned char tid, unsigned char *data,
-                         bool bErr, bool bWrite) = 0;
+                         bool bErr, bool bWrite, uint8_t oob) = 0;
 
 public:
     //ports

@@ -82,7 +82,7 @@ void master_device::response_thread ()
             }
         }
 
-        rcv_rsp (resp.rtrdid, &resp.rdata[ofs], resp.rerror, 0);
+        rcv_rsp (resp.rtrdid, &resp.rdata[ofs], resp.rerror, 0, resp.oob);
     }
 }
 

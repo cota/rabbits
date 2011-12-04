@@ -364,7 +364,7 @@ sl_block_device_master::cmd_read (uint32_t addr, uint8_t *data, uint8_t nbytes)
 
 void 
 sl_block_device_master::rcv_rsp (uint8_t tid, uint8_t *data,
-                                bool bErr, bool bWrite)
+                                 bool bErr, bool bWrite, uint8_t oob)
 {
     if (tid != m_crt_tid)
     {
@@ -538,7 +538,7 @@ void sl_block_device_slave::rcv_rqst (unsigned long ofs, unsigned char be,
     else
         this->read(ofs, be, data, bErr);
 
-    send_rsp(bErr);
+    send_rsp(bErr, 0);
 
     return;
 }

@@ -241,8 +241,10 @@ uint64 qemu_cpu_wrapper::get_no_cycles ()
 }
 
 
-unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
-    unsigned long addr, unsigned long nbytes, int bIO)
+unsigned long
+qemu_cpu_wrapper::systemc_qemu_read_memory(unsigned long addr,
+                                           unsigned long nbytes,
+                                           int bIO, uint8_t *oob)
 {
     unsigned long           val;
 
@@ -383,15 +385,16 @@ unsigned long qemu_cpu_wrapper::systemc_qemu_read_memory (
         etrace.energy_event (m_etrace_periph_id, READ_COMMAND, 0);
         #endif
 
-        val = read (addr, nbytes, bIO);
+        val = read (addr, nbytes, bIO, oob);
     }
 
     return val;
 }
 
 
-void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr, 
-                                                  unsigned long data, unsigned char nbytes, int bIO)
+/* NOTE: OOB data is only retrieved when blocking writes are enabled */
+void qemu_cpu_wrapper::systemc_qemu_write_memory(unsigned long addr,
+         unsigned long data, unsigned char nbytes, int bIO, uint8_t *oob)
 {
     static unsigned long us_prev_img = 0;
 
@@ -511,7 +514,7 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory (unsigned long addr,
         etrace.energy_event (m_etrace_periph_id, WRITE_COMMAND, 0);
         #endif
 
-        write (addr, data, nbytes, bIO);
+        write (addr, data, nbytes, bIO, oob);
     }
 }
 
@@ -541,7 +544,7 @@ void qemu_cpu_wrapper::set_etrace_periph_id (unsigned long id)
 #endif
 
 void qemu_cpu_wrapper::rcv_rsp (unsigned char tid, unsigned char *data,
-                                bool bErr, bool bWrite)
+                                bool bErr, bool bWrite, unsigned char oob)
 {
 
     qemu_wrapper_request            *localrq;
@@ -564,11 +567,12 @@ void qemu_cpu_wrapper::rcv_rsp (unsigned char tid, unsigned char *data,
 
     localrq->rcv_data = * (unsigned long *) data;
     localrq->bDone = 1;
+    localrq->oob = oob;
     localrq->evDone.notify ();
 }
 
 unsigned long qemu_cpu_wrapper::read (unsigned long addr,
-                                      unsigned long nbytes, int bIO)
+                                      unsigned long nbytes, int bIO, uint8_t *oob)
 {
     unsigned long           ret;
     int                     i;
@@ -593,6 +597,8 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
         nbytes = 4;
     for (i = 0; i < nbytes; i++)
         ((unsigned char *) &ret)[i] = ((unsigned char *) &localrq->rcv_data)[i];
+    if (oob)
+        *oob = localrq->oob;
 
     m_rqs->FreeRequest (localrq);
 
@@ -601,7 +607,8 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
 
 
 void qemu_cpu_wrapper::write (unsigned long addr,
-                              unsigned long data, unsigned char nbytes, int bIO)
+                              unsigned long data, unsigned char nbytes, int bIO,
+                              uint8_t *oob)
 {
     unsigned char                   tid;
     qemu_wrapper_request            *localrq;
@@ -632,7 +639,12 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     {
         while (!localrq->bDone)
             wait (localrq->evDone);
+        if (oob)
+            *oob = localrq->oob;
         m_rqs->FreeRequest (localrq);
+    } else {
+        if (oob)
+            *oob = OOB_NONE;
     }
 
     return;
@@ -674,12 +686,12 @@ extern "C"
 
     unsigned long
     systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
-                              unsigned long nbytes, int bIO)
+                              unsigned long nbytes, int bIO, uint8_t *oob)
     {
         unsigned long                   ret;
         unsigned long long              diff, starttime = sc_time_stamp ().value ();
 
-        ret = _this->systemc_qemu_read_memory (addr, nbytes, bIO);
+        ret = _this->systemc_qemu_read_memory (addr, nbytes, bIO, oob);
 
         diff = sc_time_stamp ().value () - starttime;
         if (diff)
@@ -690,11 +702,12 @@ extern "C"
 
     void
     systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, unsigned long addr,
-        unsigned long data, unsigned char nbytes, int bIO)
+                               unsigned long data, unsigned char nbytes,
+                               int bIO, uint8_t *oob)
     {
         unsigned long long          diff, starttime = sc_time_stamp ().value ();
 
-        _this->systemc_qemu_write_memory (addr, data, nbytes, bIO);
+        _this->systemc_qemu_write_memory (addr, data, nbytes, bIO, oob);
 
         diff = sc_time_stamp ().value () - starttime;
         if (diff)

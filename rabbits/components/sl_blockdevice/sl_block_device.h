@@ -81,7 +81,7 @@ public:
 public:
     /*
      *   Obtained from father
-     *   void send_rsp (bool bErr);
+     *   void send_rsp (bool bErr, uint8_t oob);
      */
     virtual void rcv_rqst (unsigned long ofs, unsigned char be,
                            unsigned char *data, bool bWrite);
@@ -121,7 +121,7 @@ public:
      *      unsigned char bytes, bool bWrite);
      */
     virtual void rcv_rsp (unsigned char tid, unsigned char *data,
-                          bool bErr, bool bWrite);
+                          bool bErr, bool bWrite, uint8_t oob);
 
     int cmd_write (uint32_t addr, uint8_t *data, uint8_t nbytes);
     int cmd_read (uint32_t addr, uint8_t *data, uint8_t nbytes);

@@ -206,7 +206,7 @@ void sem_device::rcv_rqst (unsigned long ofs, unsigned char be,
     else
         this->read (ofs, be, data, bErr);
 
-    send_rsp (bErr);
+    send_rsp (bErr, 0);
 }
 
 /*

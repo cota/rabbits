@@ -38,7 +38,7 @@ public:
     void set_master (qemu_wrapper *qemu_master);
     /*
      *   Obtained from father
-     *   void send_rsp (bool bErr);
+     *   void send_rsp (bool bErr, uint8_t oob);
      */
     virtual void rcv_rqst (unsigned long ofs, unsigned char be,
                            unsigned char *data, bool bWrite);

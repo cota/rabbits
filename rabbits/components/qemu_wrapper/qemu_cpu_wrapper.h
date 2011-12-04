@@ -47,9 +47,9 @@ public:
     void set_unblocking_write (bool val);
     //qemu interface
     unsigned long systemc_qemu_read_memory (unsigned long address,
-                                            unsigned long nbytes, int bIO);
+                                            unsigned long nbytes, int bIO, uint8_t *oob);
     void systemc_qemu_write_memory (unsigned long address, unsigned long data,
-                                    unsigned char nbytes, int bIO);
+                                    unsigned char nbytes, int bIO, uint8_t *oob);
     void consume_instruction_cycles_with_sync (unsigned long ns);
     void add_time_at_fv (unsigned long ns);
     uint64 get_no_cycles ();
@@ -66,13 +66,13 @@ private:
     //threads
     void cpu_thread ();
 
-    void rcv_rsp(unsigned char tid, unsigned char *data, bool bErr, bool bWrite);
+    void rcv_rsp(unsigned char tid, unsigned char *data, bool bErr, bool bWrite, uint8_t oob);
 
 private:
     //local functions
-    unsigned long read (unsigned long address, unsigned long nbytes, int bIO);
+    unsigned long read (unsigned long address, unsigned long nbytes, int bIO, uint8_t *oob);
     void write (unsigned long address, unsigned long data,
-                unsigned char nbytes, int bIO);
+                unsigned char nbytes, int bIO, uint8_t *oob);
     /* long blocking_raw_read (unsigned long addr8Balgn, unsigned char be, */
     /*     unsigned char bytes, unsigned char *data, int bIO); */
     /* long blocking_raw_write (unsigned long addr8Balgn, unsigned char be, */

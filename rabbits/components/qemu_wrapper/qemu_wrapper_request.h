@@ -21,6 +21,7 @@
 #define _QEMU_WRAPPER_REQUEST_
 
 #include <systemc.h>
+#include <stdint.h>
 
 class qemu_wrapper_request
 {
@@ -34,6 +35,7 @@ public:
     unsigned char               bWrite;
     sc_event                    evDone;
     unsigned long               rcv_data;
+    uint8_t                     oob;
 
     qemu_wrapper_request        *m_next;
 };

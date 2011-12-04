@@ -419,7 +419,7 @@ void sl_fb_device::rcv_rqst (unsigned long ofs, unsigned char be,
         this->read(ofs, be, data, bErr);
     }
 
-    send_rsp(bErr);
+    send_rsp(bErr, 0);
 
     return;
 }

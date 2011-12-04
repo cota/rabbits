@@ -85,13 +85,14 @@ void slave_device::request_thread ()
 
 
 void
-slave_device::send_rsp (bool bErr)
+slave_device::send_rsp (bool bErr, uint8_t oob)
 {
     if (m_write_invalidate && m_req.cmd == CMD_WRITE)
         invalidate_address (m_req.initial_address,
             m_req.slave_id, m_req.initial_address, m_req.srcid);
 
     m_rsp.rerror = bErr;
+    m_rsp.oob = oob;
     put_port->put (m_rsp);
 
     m_bProcessing_rq = false;

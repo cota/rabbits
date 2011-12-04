@@ -59,9 +59,10 @@ extern "C"
         qemu_cpu_wrapper_t *_this, int ninstr);
     extern void systemc_qemu_consume_ns (unsigned long ns);
     extern unsigned long systemc_qemu_read_memory (qemu_cpu_wrapper_t *_this, 
-        unsigned long address, unsigned long nbytes, int bIO);
+        unsigned long address, unsigned long nbytes, int bIO, uint8_t *oob);
     extern void systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, 
-        unsigned long address, unsigned long data, unsigned char nbytes, int bIO);
+        unsigned long address, unsigned long data, unsigned char nbytes,
+        int bIO, uint8_t *oob);
     extern unsigned long long systemc_qemu_get_time ();
     extern uint64 systemc_qemu_get_no_cycles(qemu_cpu_wrapper_t *_this);
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
