@@ -20,6 +20,7 @@
 #include <interconnect_master.h>
 #include <interconnect_slave.h>
 #include <mwsr_ta_fifo.h>
+#include <cfg.h>
 
 interconnect_master::interconnect_master (sc_module_name name, interconnect *parent, int srcid)
 : sc_module (name)
@@ -110,6 +111,13 @@ void interconnect_master::dispatch_requests_thread ()
             exit (1);
         }
         slave_id = m_map[i].slave_id;
+
+#ifdef CONFIG_L2M
+        /* divert RAM requests from QEMU to L2M */
+        if (req.srcid == 0 && slave_id == 0 && addr & L2M_THRESHOLD)
+            slave_id = L2M_SLAVE_ID;
+#endif
+
         slave = m_parent->get_slave (slave_id);
 
         if (slave == NULL)

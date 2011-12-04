@@ -40,7 +40,7 @@ mem_device::mem_device (const char *_name, unsigned long _size) : slave_device (
     mem = new unsigned char [size];
     memset (mem, 0, size);
 
-    DPRINTF ("mem_device: Memory area location: 0x%08x\n", mem);
+    DPRINTF ("mem_device: Memory area location: 0x%08x\n", (unsigned int)mem);
 
 }
 
@@ -156,7 +156,8 @@ void mem_device::read (unsigned long ofs, unsigned char be, unsigned char *data,
 
         *((unsigned long *) (data + be_off)) = (unsigned long) (mem + ofs + be_off);
 
-        DPRINTF("read burst rsp: 0x%08x\n", *(uint32_t *)(data + be_off));
+        DPRINTF("read burst rsp: 0x%08x, mem 0x%08x, ofs 0x%lx be_off 0x%x\n",
+                *(uint32_t *)(data + be_off), (int)mem, ofs, be_off);
 
         wait (3 * this->m_req.plen, SC_NS);
     }

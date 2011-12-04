@@ -17,6 +17,7 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/timer              \
                $(COMPONENTS)/tty_serial         \
                $(COMPONENTS)/etrace             \
+               $(COMPONENTS)/l2m_device         \
                $(PLATFORMS)/roger
 
 CC           = g++

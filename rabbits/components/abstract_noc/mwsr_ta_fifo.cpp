@@ -88,6 +88,10 @@ bool mwsr_ta_fifo<ITEM>::IsFull ()
 template class mwsr_ta_fifo<vci_request>;
 template class mwsr_ta_fifo<vci_response>;
 
+#include <l2m_device.h>
+template class mwsr_ta_fifo<l2m_req>;
+template class mwsr_ta_fifo<l2m_rsp>;
+
 /*
  * Vim standard variables
  * vim:set ts=4 expandtab tw=80 cindent syntax=c:

@@ -27,6 +27,13 @@
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
+//#define CONFIG_L2M
+
+#define L2M_SIZE_BITS	17
+#define L2M_THRESHOLD	(1 << 13)
+#define L2M_SLAVE_ID	7
+#define L2M_ASSOC		2
+
 #endif
 
 /*
