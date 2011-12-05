@@ -31,8 +31,8 @@
 
 #define NO_CPUS 4
 
-#define L2M_SIZE_BITS	17
-#define L2M_THRESHOLD	(1 << 13)
+#define L2M_SIZE_BITS	19
+#define L2M_THRESHOLD	0x3000
 #define L2M_SLAVE_ID	(NO_CPUS + 3)
 #define L2M_ASSOC		2
 
