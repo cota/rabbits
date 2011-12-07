@@ -28,6 +28,7 @@
 #endif
 
 //#define CONFIG_L2M
+//#define CONFIG_L3
 
 #define NO_CPUS 4
 
