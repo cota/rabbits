@@ -66,7 +66,7 @@ int sc_main (int argc, char ** argv)
     is.cpu_model = NULL;
     is.kernel_filename = NULL;
     is.initrd_filename = NULL;
-    is.no_cpus = 4;
+    is.no_cpus = NO_CPUS;
     is.ramsize = 256 * 1024 * 1024;
     parse_cmdline (argc, argv, &is);
     if (check_init (&is) != 0)
@@ -88,7 +88,7 @@ int sc_main (int argc, char ** argv)
     fb_device         *fb    = new fb_device("fb", is.no_cpus, &fb_res_stat); 
     dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 1/* , nslaves + 1*/);
     sl_block_device   *bl    = new sl_block_device("block", is.no_cpus + 2, NULL, 1);
-    l2m_device        *l2m   = new l2m_device("l2m", is.no_cpus + 3, L2M_SIZE_BITS, L2M_ASSOC);
+    l2m_device        *l2m   = new l2m_device("l2m", L2M_SLAVE_ID, L2M_SIZE_BITS, L2M_ASSOC);
 
 
     timer_device      *timers[1];

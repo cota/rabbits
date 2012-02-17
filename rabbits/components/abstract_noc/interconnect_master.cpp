@@ -114,7 +114,7 @@ void interconnect_master::dispatch_requests_thread ()
 
 #ifdef CONFIG_L2M
         /* divert RAM requests from QEMU to L2M */
-        if (req.srcid == 0 && slave_id == 0 && addr & L2M_THRESHOLD)
+        if (req.srcid != L2M_SLAVE_ID && slave_id == 0 && addr & L2M_THRESHOLD)
             slave_id = L2M_SLAVE_ID;
 #endif
 

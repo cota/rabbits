@@ -29,9 +29,11 @@
 
 //#define CONFIG_L2M
 
+#define NO_CPUS 4
+
 #define L2M_SIZE_BITS	17
 #define L2M_THRESHOLD	(1 << 13)
-#define L2M_SLAVE_ID	7
+#define L2M_SLAVE_ID	(NO_CPUS + 3)
 #define L2M_ASSOC		2
 
 #endif
