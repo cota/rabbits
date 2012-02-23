@@ -695,7 +695,7 @@ void fb_device_slave::read (unsigned long ofs, unsigned char be,
 }
 
 void fb_device_slave::rcv_rqst (unsigned long ofs, unsigned char be,
-                                unsigned char *data, bool bWrite)
+                                unsigned char *data, bool bWrite, bool sleep)
 {
     bool bErr = false;
 

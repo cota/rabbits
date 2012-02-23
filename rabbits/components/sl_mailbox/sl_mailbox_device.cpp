@@ -199,7 +199,7 @@ void sl_mailbox_device::read (unsigned long ofs, unsigned char be, unsigned char
 }
 
 void sl_mailbox_device::rcv_rqst (unsigned long ofs, unsigned char be,
-                                unsigned char *data, bool bWrite)
+                                  unsigned char *data, bool bWrite, bool sleep)
 {
 
     bool bErr = false;

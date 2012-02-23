@@ -103,7 +103,7 @@ void qemu_wrapper_slave_device::read (unsigned long ofs, unsigned char be,
 }
 
 void qemu_wrapper_slave_device::rcv_rqst (unsigned long ofs, unsigned char be,
-    unsigned char *data, bool bWrite)
+                                          unsigned char *data, bool bWrite, bool sleep)
 {
 
     bool bErr = false;

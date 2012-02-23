@@ -66,6 +66,7 @@ namespace noc
 
         uint32_t    initial_address;
         int         slave_id;
+        bool        sleep;
     };
     enum {
         CMD_NOP,
@@ -91,6 +92,7 @@ namespace noc
         // Extra field
         uint8_t   rbe;
         uint8_t   oob; /* Out of Band data */
+        bool      sleep;
     };
 
     template <typename T>

@@ -98,7 +98,8 @@ void interconnect_master::dispatch_requests_thread ()
     {
         req = m_queue_requests->Read ();
 
-        wait (NOC_DELAY_NS, SC_NS);
+        if (req.sleep)
+            wait(NOC_DELAY_NS, SC_NS);
 
         addr = req.address;
         for (i = 0; i < m_nmap; i++)

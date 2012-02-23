@@ -528,7 +528,7 @@ void sl_block_device_slave::read (unsigned long ofs, unsigned char be,
 }
 
 void sl_block_device_slave::rcv_rqst (unsigned long ofs, unsigned char be,
-                                      unsigned char *data, bool bWrite)
+                                      unsigned char *data, bool bWrite, bool sleep)
 {
 
     bool bErr = false;

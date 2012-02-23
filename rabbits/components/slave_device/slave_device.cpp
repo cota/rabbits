@@ -68,14 +68,15 @@ void slave_device::request_thread ()
         m_rsp.rtrdid   = m_req.trdid;
         m_rsp.reop     = 1;
         m_rsp.rbe      = be;
+        m_rsp.sleep    = m_req.sleep;
 
         switch (cmd)
         {
         case CMD_WRITE:
-            this->rcv_rqst (addr, be, m_req.wdata, true);
+            this->rcv_rqst (addr, be, m_req.wdata, true, m_rsp.sleep);
             break;
         case CMD_READ:
-            this->rcv_rqst (addr, be, m_rsp.rdata, false);
+            this->rcv_rqst (addr, be, m_rsp.rdata, false, m_rsp.sleep);
             break;
         default:
             cerr << "Unknown command" << endl;
@@ -85,7 +86,7 @@ void slave_device::request_thread ()
 
 
 void
-slave_device::send_rsp (bool bErr, uint8_t oob)
+slave_device::__send_rsp(bool bErr, uint8_t oob, bool sleep)
 {
     if (m_write_invalidate && m_req.cmd == CMD_WRITE)
         invalidate_address (m_req.initial_address,
@@ -93,9 +94,22 @@ slave_device::send_rsp (bool bErr, uint8_t oob)
 
     m_rsp.rerror = bErr;
     m_rsp.oob = oob;
+    m_rsp.sleep = sleep;
     put_port->put (m_rsp);
 
     m_bProcessing_rq = false;
+}
+
+void
+slave_device::send_rsp (bool bErr, uint8_t oob)
+{
+    return __send_rsp(bErr, oob, 1);
+}
+
+void
+slave_device::send_rsp_nosleep(bool bErr, uint8_t oob)
+{
+    return __send_rsp(bErr, oob, 0);
 }
 
 /*

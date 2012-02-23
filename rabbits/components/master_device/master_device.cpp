@@ -86,8 +86,9 @@ void master_device::response_thread ()
     }
 }
 
-void master_device::send_req (unsigned char tid, unsigned long addr,
-    unsigned char *data, unsigned long nbytes, bool bWrite)
+void master_device::__send_req(unsigned char tid, unsigned long addr,
+                               unsigned char *data, unsigned long nbytes,
+                               bool bWrite, bool sleep)
 {
     int                     i;
     unsigned char           ofs, mask_be, plen;
@@ -108,6 +109,7 @@ void master_device::send_req (unsigned char tid, unsigned long addr,
     req.srcid   = m_node_id;
     req.plen    = plen;
     req.eop     = 1;
+    req.sleep   = sleep;
     memset (&req.wdata, 0, 8);
 
     if (bWrite)
@@ -117,6 +119,20 @@ void master_device::send_req (unsigned char tid, unsigned long addr,
     }
 
     put_port->put (req);
+}
+
+void master_device::send_req(unsigned char tid, unsigned long addr,
+                             unsigned char *data, unsigned long nbytes,
+                             bool bWrite)
+{
+    return __send_req(tid, addr, data, nbytes, bWrite, 1);
+}
+
+void master_device::send_req_nosleep(unsigned char tid, unsigned long addr,
+                                     unsigned char *data, unsigned long nbytes,
+                                     bool bWrite)
+{
+    return __send_req(tid, addr, data, nbytes, bWrite, 0);
 }
 
 /*

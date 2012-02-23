@@ -32,7 +32,7 @@ class l2m_device_slave : public slave_device
      *   void send_rsp (bool bErr, uint8_t oob);
      */
     virtual void rcv_rqst(unsigned long ofs, unsigned char be,
-                          unsigned char *data, bool bWrite);
+                          unsigned char *data, bool bWrite, bool sleep);
 
  private:
     mwsr_ta_fifo<l2m_req>	*m_reqs;

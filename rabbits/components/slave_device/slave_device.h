@@ -33,13 +33,15 @@ public:
 private:
     //sc threads
     void request_thread ();
+    void __send_rsp(bool bErr, uint8_t oob, bool sleep);
 
 public:
     void send_rsp (bool bErr, uint8_t oob);
+    void send_rsp_nosleep(bool bErr, uint8_t oob);
 
     // Slave modules have to implement the recieve function ...
     virtual void rcv_rqst (unsigned long ofs, unsigned char be,
-                           unsigned char *data, bool bWrite) = 0;
+                           unsigned char *data, bool bWrite, bool sleep) = 0;
     virtual unsigned char *get_mem () {return 0;}
     virtual unsigned long get_size () {return 0;}
 

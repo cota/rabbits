@@ -274,7 +274,7 @@ l2m_device_slave::~l2m_device_slave()
 
 void
 l2m_device_slave::rcv_rqst(unsigned long ofs, unsigned char be,
-                     unsigned char *data, bool bWrite)
+                     unsigned char *data, bool bWrite, bool sleep)
 {
     l2m_req req;
 

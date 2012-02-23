@@ -63,6 +63,11 @@ extern "C"
     extern void systemc_qemu_write_memory (qemu_cpu_wrapper_t *_this, 
         unsigned long address, unsigned long data, unsigned char nbytes,
         int bIO, uint8_t *oob);
+    extern void systemc_qemu_write_memory_nosleep(qemu_cpu_wrapper_t *_this,
+                                                  unsigned long address,
+                                                  unsigned long data,
+                                                  unsigned char nbytes,
+                                                  int bIO, uint8_t *oob);
     extern unsigned long long systemc_qemu_get_time ();
     extern uint64 systemc_qemu_get_no_cycles(qemu_cpu_wrapper_t *_this);
     extern unsigned long systemc_get_mem_addr (qemu_cpu_wrapper_t *qw, unsigned long addr);
@@ -118,6 +123,7 @@ qemu_wrapper::qemu_wrapper (sc_module_name name, unsigned int node,
         (systemc_qemu_consume_ns_fc_t) systemc_qemu_consume_ns;
     sc_exp_fcs.systemc_qemu_read_memory = (systemc_qemu_read_memory_fc_t) systemc_qemu_read_memory;
     sc_exp_fcs.systemc_qemu_write_memory = (systemc_qemu_write_memory_fc_t) systemc_qemu_write_memory;
+    sc_exp_fcs.systemc_qemu_write_memory_nosleep = (systemc_qemu_write_memory_fc_t) systemc_qemu_write_memory_nosleep;
     sc_exp_fcs.systemc_qemu_get_time = (systemc_qemu_get_time_fc_t) systemc_qemu_get_time;
     sc_exp_fcs.systemc_qemu_get_no_cycles = (systemc_qemu_get_no_cycles_fc_t) systemc_qemu_get_no_cycles;
     sc_exp_fcs.systemc_get_mem_addr = (systemc_get_mem_addr_fc_t) systemc_get_mem_addr;

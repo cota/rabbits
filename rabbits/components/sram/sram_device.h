@@ -35,7 +35,7 @@ public:
      *   void send_rsp (bool bErr, uint8_t oob);
      */
     virtual void rcv_rqst(unsigned long ofs, unsigned char be,
-                          unsigned char *data, bool bWrite);
+                          unsigned char *data, bool bWrite, bool sleep);
 
 
     virtual unsigned char *get_mem() {return mem;}

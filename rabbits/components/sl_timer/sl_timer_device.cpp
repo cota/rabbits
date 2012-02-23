@@ -209,7 +209,7 @@ void sl_timer_device::sl_timer_thread (void)
 }
 
 void sl_timer_device::rcv_rqst (unsigned long ofs, unsigned char be,
-                                unsigned char *data, bool bWrite)
+                                unsigned char *data, bool bWrite, bool sleep)
 {
 
     bool bErr = false;

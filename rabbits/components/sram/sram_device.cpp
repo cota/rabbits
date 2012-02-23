@@ -199,7 +199,7 @@ sram_device::read (uint32_t ofs, uint8_t be, uint8_t *data, bool &bErr)
 
 void
 sram_device::rcv_rqst(unsigned long ofs, unsigned char be,
-                      unsigned char *data, bool bWrite)
+                      unsigned char *data, bool bWrite, bool sleep)
 {
 
     bool bErr = false;

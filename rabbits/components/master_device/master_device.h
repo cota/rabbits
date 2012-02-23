@@ -33,10 +33,16 @@ public:
 private:
     //sc threads
     void response_thread ();
+    void __send_req(unsigned char tid, unsigned long addr,
+                    unsigned char *data, unsigned long nbytes,
+                    bool bWrite, bool sleep);
 
 public:
     void send_req(unsigned char tid, unsigned long addr,
                   unsigned char *data, unsigned long nbytes, bool bWrite);
+    void send_req_nosleep(unsigned char tid, unsigned long addr,
+                          unsigned char *data, unsigned long nbytes,
+                          bool bWrite);
 
     // Master modules have to implement the recieve function ...
     virtual void rcv_rsp(unsigned char tid, unsigned char *data,

@@ -393,8 +393,11 @@ qemu_cpu_wrapper::systemc_qemu_read_memory(unsigned long addr,
 
 
 /* NOTE: OOB data is only retrieved when blocking writes are enabled */
-void qemu_cpu_wrapper::systemc_qemu_write_memory(unsigned long addr,
-         unsigned long data, unsigned char nbytes, int bIO, uint8_t *oob)
+void
+qemu_cpu_wrapper::__systemc_qemu_write_memory(unsigned long addr,
+                                              unsigned long data,
+                                              unsigned char nbytes, int bIO,
+                                              uint8_t *oob, bool sleep)
 {
     static unsigned long us_prev_img = 0;
 
@@ -514,8 +517,29 @@ void qemu_cpu_wrapper::systemc_qemu_write_memory(unsigned long addr,
         etrace.energy_event (m_etrace_periph_id, WRITE_COMMAND, 0);
         #endif
 
-        write (addr, data, nbytes, bIO, oob);
+        if (sleep)
+            write(addr, data, nbytes, bIO, oob);
+        else
+            write_nosleep(addr, data, nbytes, bIO, oob);
     }
+}
+
+void
+qemu_cpu_wrapper::systemc_qemu_write_memory(unsigned long addr,
+                                            unsigned long data,
+                                            unsigned char nbytes, int bIO,
+                                            uint8_t *oob)
+{
+    return __systemc_qemu_write_memory(addr, data, nbytes, bIO, oob, 1);
+}
+
+void
+qemu_cpu_wrapper::systemc_qemu_write_memory_nosleep(unsigned long addr,
+                                                    unsigned long data,
+                                                    unsigned char nbytes, int bIO,
+                                                    uint8_t *oob)
+{
+    return __systemc_qemu_write_memory(addr, data, nbytes, bIO, oob, 0);
 }
 
 void qemu_cpu_wrapper::add_time_at_fv (unsigned long ns)
@@ -606,9 +630,9 @@ unsigned long qemu_cpu_wrapper::read (unsigned long addr,
 }
 
 
-void qemu_cpu_wrapper::write (unsigned long addr,
-                              unsigned long data, unsigned char nbytes, int bIO,
-                              uint8_t *oob)
+void qemu_cpu_wrapper::__write(unsigned long addr,
+                               unsigned long data, unsigned char nbytes, int bIO,
+                               uint8_t *oob, bool sleep)
 {
     unsigned char                   tid;
     qemu_wrapper_request            *localrq;
@@ -633,7 +657,10 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     localrq->bWrite = 1;
     tid = localrq->tid;
 
-    send_req(tid, addr, (unsigned char *)&data, nbytes, 1);
+    if (sleep)
+        send_req(tid, addr, (unsigned char *)&data, nbytes, 1);
+    else
+        send_req_nosleep(tid, addr, (unsigned char *)&data, nbytes, 1);
 
     if (!m_unblocking_write)
     {
@@ -650,6 +677,19 @@ void qemu_cpu_wrapper::write (unsigned long addr,
     return;
 }
 
+void qemu_cpu_wrapper::write(unsigned long addr,
+                             unsigned long data, unsigned char nbytes, int bIO,
+                             uint8_t *oob)
+{
+    return __write(addr, data, nbytes, bIO, oob, 1);
+}
+
+void qemu_cpu_wrapper::write_nosleep(unsigned long addr,
+                                     unsigned long data, unsigned char nbytes,
+                                     int bIO, uint8_t *oob)
+{
+    return __write(addr, data, nbytes, bIO, oob, 0);
+}
 
 void qemu_cpu_wrapper::wait_wb_empty ()
 {
@@ -708,6 +748,22 @@ extern "C"
         unsigned long long          diff, starttime = sc_time_stamp ().value ();
 
         _this->systemc_qemu_write_memory (addr, data, nbytes, bIO, oob);
+
+        diff = sc_time_stamp ().value () - starttime;
+        if (diff)
+        {
+            _this->add_time_at_fv (diff);
+        }
+    }
+
+    void
+    systemc_qemu_write_memory_nosleep(qemu_cpu_wrapper_t *_this, unsigned long addr,
+                                      unsigned long data, unsigned char nbytes,
+                                      int bIO, uint8_t *oob)
+    {
+        unsigned long long          diff, starttime = sc_time_stamp ().value ();
+
+        _this->systemc_qemu_write_memory_nosleep(addr, data, nbytes, bIO, oob);
 
         diff = sc_time_stamp ().value () - starttime;
         if (diff)
