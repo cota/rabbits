@@ -40,7 +40,7 @@ public:
     virtual unsigned long get_size () {return size;}
 
 private:
-    void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
+    void write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr, bool sleep);
     void read  (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr);
 
 private:

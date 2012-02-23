@@ -52,14 +52,16 @@ mem_device::~mem_device ()
         delete [] mem;
 }
 
-void mem_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr)
+void mem_device::write (unsigned long ofs, unsigned char be, unsigned char *data, bool &bErr, bool sleep)
 {
     int                 offset_dd = 0;
     int                 mod = 0;
     int                 err = 0;
 
     bErr = false;
-    wait (MEM_DELAY_NS, SC_NS);
+
+    if (sleep)
+        wait (MEM_DELAY_NS, SC_NS);
 
     if (ofs > size || be == 0)
         err = 1;
@@ -235,11 +237,14 @@ void mem_device::rcv_rqst (unsigned long ofs, unsigned char be,
     bool bErr = false;
 
     if (bWrite)
-        this->write (ofs, be, data, bErr);
+        this->write (ofs, be, data, bErr, sleep);
     else
         this->read (ofs, be, data, bErr);
 
-    send_rsp (bErr, 0);
+    if (sleep)
+        send_rsp(bErr, 0);
+    else
+        send_rsp_nosleep(bErr, 0);
 }
 
 /*
