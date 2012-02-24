@@ -66,6 +66,7 @@ class l2m_device_master : public master_device
 #define L2M_LINE_BITS	5
 #define L2M_LINE_BYTES	(1 << L2M_LINE_BITS)
 #define L2M_LINE_MASK	(L2M_LINE_BYTES - 1)
+#define L2M_ACCESS_TIME_NS	10
 
 struct line_entry {
     uint32_t	tag;

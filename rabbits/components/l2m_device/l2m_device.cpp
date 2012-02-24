@@ -200,7 +200,7 @@ void l2m_device::l2m_thread()
             uint32_t offset = build_l2_addr(idx, way);
 	    uint32_t b_off = offset + ((req.ofs) & L2M_LINE_MASK);
 
-            wait (10, SC_NS);
+            wait(L2M_ACCESS_TIME_NS, SC_NS);
 
             if (!req.bWrite) { /* read */
                 if (!hit) {
