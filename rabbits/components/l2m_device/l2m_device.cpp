@@ -59,6 +59,7 @@ l2m_device::l2m_device(sc_module_name _name, uint32_t master_id,
              * ages in a given set are all different.
              */
             entry.age = way;
+            entry.dirty = false;
 
             write_entry(entry, i, way);
         }
@@ -92,6 +93,39 @@ slave_device *
 l2m_device::get_slave()
 {
     return (slave_device *)slave;
+}
+
+void l2m_device::evict_line(int tag, int idx, int way)
+{
+    uint32_t offset = build_l2_addr(idx, way);
+    int addr = build_addr(tag, idx);
+    int mem_addr = 0;
+    int ret;
+
+    DPRINTF("line eviction: tag 0x%x, idx %d, way %d\n", tag, idx, way);
+
+    ret = master->cmd_read(addr, (uint8_t *)&mem_addr, L2M_LINE_BYTES);
+    if (!ret) {
+        EPRINTF("line eviction failed: tag 0x%x, idx %d, way %d\n",
+                tag, idx, way);
+    } else {
+        memcpy((void *)mem_addr, &m_mem[offset], L2M_LINE_BYTES);
+    }
+}
+
+void l2m_device::fetch_line(int tag, int idx, int way, uint32_t offset,
+                            uint32_t b_off)
+{
+    uint32_t addr = build_addr(tag, idx);
+    uint32_t mem_addr = 0;
+    int ret;
+
+    DPRINTF("fetching line with offset 0x%x\n", offset);
+    ret = master->cmd_read(addr, (uint8_t *)&mem_addr, L2M_LINE_BYTES);
+    if (!ret)
+        EPRINTF("line fetch failed: tag 0x%x, idx %d, way %d\n", tag, idx, way);
+    else
+        memcpy(&m_mem[offset], (void *)mem_addr, L2M_LINE_BYTES);
 }
 
 void l2m_device::l2m_thread()
@@ -167,8 +201,8 @@ void l2m_device::l2m_thread()
             int lru_way = 0;
             int i;
 
-            DPRINTF("addr (%s) 0x%08lx tag 0x%x idx 0x%x loffs 0x%x lwid %d\n",
-                    req.bWrite ? "w" : "r", req.ofs, tag, idx, loffs, lwid);
+            DPRINTF("addr (%s) 0x%08lx tag 0x%x idx 0x%x loffs 0x%x lwid %d sleep %d\n",
+                    req.bWrite ? "w" : "r", req.ofs, tag, idx, loffs, lwid, req.sleep);
 
             /*
              * Note: in the main loop, we read the necessary entries
@@ -200,62 +234,71 @@ void l2m_device::l2m_thread()
             uint32_t offset = build_l2_addr(idx, way);
 	    uint32_t b_off = offset + ((req.ofs) & L2M_LINE_MASK);
 
-            wait(L2M_ACCESS_TIME_NS, SC_NS);
-
-            if (!req.bWrite) { /* read */
-                if (!hit) {
-                    uint32_t addr = build_addr(tag, idx);
-                    uint32_t mem_addr = 0;
-                    ret = master->cmd_read(addr, (uint8_t *)&mem_addr, L2M_LINE_BYTES);
+            if (req.sleep) {
+                wait(L2M_ACCESS_TIME_NS, SC_NS);
+            } else {
+                /*
+                 * Hack: send non-sleeping writes transparently to DRAM
+                 * to keep QEMU happy.
+                 */
+                if (req.bWrite) {
+                    ret = master->cmd_write(req.ofs, data, lwid, 0);
                     if (!ret)
                         err = 1;
-		    DPRINTF("offset 0x%x\n", offset);
-                    memcpy(&m_mem[offset], (void *)mem_addr, L2M_LINE_BYTES);
-		    DPRINTF("update tag 0x%x, idx %d\n", tag, idx);
-                    desc[way].tag = tag;
-                    desc[way].valid = true;
+                    goto send_rsp;
                 }
+            }
+
+            if (!hit) {
+                if (desc[way].dirty)
+                    evict_line(desc[way].tag, idx, way);
+                fetch_line(tag, idx, way, offset, b_off);
+            }
+
+            if (!req.bWrite) { /* read */
                 if (lwid == 8) {
 			*(uint32_t *)req.data = (uint32_t)&m_mem[offset];
                 } else {
-			DPRINTF("%d: 0x%x 0x%x\n", __LINE__, (int)req.ofs, (int)b_off);
+                    DPRINTF("%d: 0x%x 0x%x\n", __LINE__, (int)req.ofs, (int)b_off);
                     memcpy(req.data, &m_mem[b_off], lwid);
                 }
+                desc[way].dirty = false;
             } else { /* write */
-		    if (hit) {
-			    DPRINTF("%d: 0x%lx 0x%x\n", __LINE__, req.ofs, b_off);
-			    memcpy(&m_mem[b_off], &data, lwid);
-		    }
-                ret = master->cmd_write(req.ofs, data, lwid);
-                if (!ret)
-                    err = 1;
+                DPRINTF("%d: 0x%lx 0x%x\n", __LINE__, req.ofs, b_off);
+                memcpy(&m_mem[b_off], &data, lwid);
+                desc[way].dirty = true;
             }
+            DPRINTF("updating tag 0x%x, idx %d, way %d\n", tag, idx, way);
+            desc[way].tag = tag;
+            desc[way].valid = true;
 
-            if (hit || !req.bWrite) {
-                for (i = 0; i < m_ways; i++) {
-                    if (desc[i].age < desc[way].age) {
-                        desc[i].age++;
-                    }
+            for (i = 0; i < m_ways; i++) {
+                if (desc[i].age < desc[way].age) {
+                    desc[i].age++;
                 }
-                desc[way].age = 0;
             }
+            desc[way].age = 0;
 
             for (i = 0; i < m_ways; i++)
                 write_entry(desc[i], idx, i);
 	}
 
+     send_rsp:
         l2m_rsp rsp;
         if (err) {
             EPRINTF("Error in mem access: ofs 0x%lx loffs 0x%x lwid %d\n",
                     req.ofs, loffs, lwid);
             rsp.bErr = true;
             rsp.oob = OOB_NONE;
+            rsp.sleep = req.sleep;
             m_l2_rsps->Write(rsp);
         } else {
             rsp.bErr = false;
-            rsp.oob = OOB_CACHE_MISS;
-            if (!req.bWrite && hit)
-                rsp.oob = OOB_CACHE_HIT;
+            if (req.sleep)
+                rsp.oob = hit ? OOB_CACHE_HIT : OOB_CACHE_MISS;
+            else
+                rsp.oob = OOB_NONE;
+            rsp.sleep = req.sleep;
             m_l2_rsps->Write(rsp);
         }
     }
@@ -283,11 +326,15 @@ l2m_device_slave::rcv_rqst(unsigned long ofs, unsigned char be,
     req.plen = this->m_req.plen;
     req.data = data;
     req.bWrite = bWrite;
+    req.sleep = sleep;
     m_reqs->Write(req);
 
     l2m_rsp rsp = m_rsps->Read();
 
-    send_rsp(rsp.bErr, rsp.oob);
+    if (rsp.sleep)
+        send_rsp(rsp.bErr, rsp.oob);
+    else
+        send_rsp_nosleep(rsp.bErr, rsp.oob);
 }
 
 l2m_device_master::l2m_device_master(const char *_name, uint32_t node_id)
@@ -318,9 +365,14 @@ l2m_device_master::rcv_rsp(uint8_t tid, uint8_t *data,
 }
 
 int
-l2m_device_master::cmd_write(uint32_t addr, uint32_t data, uint8_t nbytes)
+l2m_device_master::cmd_write(uint32_t addr, uint32_t data, uint8_t nbytes,
+                             bool sleep)
 {
-    send_req(m_crt_tid, addr, (unsigned char *)&data, nbytes, 1);
+    if (sleep)
+        send_req(m_crt_tid, addr, (unsigned char *)&data, nbytes, 1);
+    else
+        send_req_nosleep(m_crt_tid, addr, (unsigned char *)&data, nbytes, 1);
+
     wait(ev_cmd_done);
     return 1;
 }

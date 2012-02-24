@@ -11,10 +11,12 @@ struct l2m_req {
     uint8_t plen;
     uint8_t *data;
     bool bWrite;
+    bool sleep;
 };
 
 struct l2m_rsp {
     bool bErr;
+    bool sleep;
     uint8_t oob;
 };
 
@@ -53,7 +55,7 @@ class l2m_device_master : public master_device
      */
     virtual void rcv_rsp(unsigned char tid, unsigned char *data,
                          bool bErr, bool bWrite, uint8_t oob);
-    int cmd_write(uint32_t addr, uint32_t data, uint8_t nbytes);
+    int cmd_write(uint32_t addr, uint32_t data, uint8_t nbytes, bool sleep);
     int cmd_read (uint32_t addr, uint8_t *data, uint8_t nbytes);
 
  private:
@@ -72,6 +74,7 @@ struct line_entry {
     uint32_t	tag;
     uint8_t	age;
     bool	valid;
+    bool	dirty;
 };
 
 class l2m_device : public sc_module
@@ -106,6 +109,8 @@ class l2m_device : public sc_module
 
  private:
     void l2m_thread(void);
+    void evict_line(int tag, int idx, int way);
+    void fetch_line(int tag, int idx, int way, uint32_t offset, uint32_t b_off);
 
  private:
     inline uint32_t addr_to_tag(uint32_t addr)
