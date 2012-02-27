@@ -27,15 +27,40 @@
 #define ETRACE_NB_CPU_IN_GROUP 4
 #endif
 
-//#define CONFIG_L2M
+#ifndef BIT
+#define BIT(nr)         (1 << (nr))
+#endif
+
+#define CONFIG_L2M
 //#define CONFIG_L3
 
 #define NO_CPUS 4
+/*
+ * NOTE: we in fact get 2**n - 1 acc's. This allows for a regular
+ * split of the address space.
+ */
+#define NO_L2MS_BITS 2
+/* remember: update the maps file! */
+#define NO_L2MS	(BIT(NO_L2MS_BITS) - 1)
 
 #define L2M_SIZE_BITS	19
-#define L2M_THRESHOLD	0x3000
+#define L2M_THRESHOLD_BITS	13
+#define L2M_THRESHOLD	BIT(L2M_THRESHOLD_BITS)
 #define L2M_SLAVE_ID	(NO_CPUS + 3)
-#define L2M_ASSOC		2
+#define L2M_ASSOC		(L2M_SIZE_BITS - L2M_THRESHOLD_BITS)
+
+/* retval: 0 means local cache block; remote otherwise. */
+static inline int addr_to_l2m(unsigned long addr)
+{
+    int l2m_id = (addr >> L2M_THRESHOLD_BITS) & NO_L2MS;
+
+    if (!l2m_id)
+        return 0;
+
+    return l2m_id - 1 + L2M_SLAVE_ID;
+}
+
+#define from_l2m(src)	(src >= L2M_SLAVE_ID && src < (L2M_SLAVE_ID + NO_L2MS))
 
 #endif
 

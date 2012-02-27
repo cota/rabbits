@@ -88,11 +88,17 @@ int sc_main (int argc, char ** argv)
     fb_device         *fb    = new fb_device("fb", is.no_cpus, &fb_res_stat); 
     dbf_device        *dbf   = new dbf_device("DBF", is.no_cpus + 1/* , nslaves + 1*/);
     sl_block_device   *bl    = new sl_block_device("block", is.no_cpus + 2, NULL, 1);
-    l2m_device        *l2m   = new l2m_device("l2m", L2M_SLAVE_ID, L2M_SIZE_BITS, L2M_ASSOC);
-
+    l2m_device        *l2m[NO_L2MS];
 
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
+    char buf[10];
+
+    for (i = 0; i < NO_L2MS; i++) {
+        sprintf(buf, "l2m%d", i);
+        l2m[i] = new l2m_device(buf, L2M_SLAVE_ID + i,
+                                L2M_SIZE_BITS, L2M_ASSOC);
+    }
 
     slaves[nslaves++] = ram;             // 0
     slaves[nslaves++] = sram;            // 1
@@ -107,7 +113,8 @@ int sc_main (int argc, char ** argv)
         timers[i] = new timer_device (buf);
         slaves[nslaves++] = timers[i];   // 6 + i
     }
-    slaves[nslaves++] = l2m->get_slave();// 7
+    for (i = 0; i < NO_L2MS; i++)
+        slaves[nslaves++] = l2m[i]->get_slave();// 7 + i
 
     int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
     int                         int_cpu_mask [] = {1, 1, 1, 1, 0, 0};
@@ -120,7 +127,7 @@ int sc_main (int argc, char ** argv)
 
     //interconnect
     onoc = new interconnect ("interconnect",
-                             is.no_cpus + 4,  /* masters: CPUs + FB + DBF + BL*/
+                             is.no_cpus + 3 + NO_L2MS,  /* masters: CPUs + FB + DBF + BL*/
                              nslaves + 1);    /* slaves:  ...             */
     for (i = 0; i < nslaves; i++)
         onoc->connect_slave_64 (i, slaves[i]->get_port, slaves[i]->put_port);
@@ -162,9 +169,11 @@ int sc_main (int argc, char ** argv)
                             bl->get_master()->put_port,
                             bl->get_master()->get_port);
 
-    onoc->connect_master_64(is.no_cpus + 3,
-                           l2m->get_master()->put_port,
-                           l2m->get_master()->get_port);
+    for (i = 0; i < NO_L2MS; i++) {
+        onoc->connect_master_64(is.no_cpus + 3 + i,
+                                l2m[i]->get_master()->put_port,
+                                l2m[i]->get_master()->get_port);
+    }
 
     sc_start ();
 
