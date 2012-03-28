@@ -122,7 +122,7 @@ void interconnect_master::dispatch_requests_thread ()
 #ifdef CONFIG_L3
         /* divert RAM requests from QEMU to L2M, acting as L3 */
         if (!from_l2m(req.srcid) && slave_id == 0 && addr >= 0x1000)
-            slave_id = addr_to_l2m(addr);
+            slave_id = addr_to_l3m(addr);
 #endif
 
         slave = m_parent->get_slave (slave_id);

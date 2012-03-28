@@ -41,7 +41,18 @@
  */
 #define NO_L2MS_BITS 2
 /* remember: update the maps file! */
-#define NO_L2MS	(BIT(NO_L2MS_BITS) - 1)
+#define NO_L2S	(BIT(NO_L2MS_BITS) - 1)
+/*
+ * L3M's are just L2M's functioning as L3's.
+ * L3M's must be powers of two
+ */
+#define NO_L3S	BIT(NO_L2MS_BITS)
+
+#ifdef CONFIG_L2M
+#define NO_L2MS	NO_L2S
+#else
+#define NO_L2MS	NO_L3S
+#endif
 
 #define L2M_SIZE_BITS	19
 #define L2M_THRESHOLD_BITS	15
@@ -58,6 +69,13 @@ static inline int addr_to_l2m(unsigned long addr)
         return 0;
 
     return l2m_id - 1 + L2M_SLAVE_ID;
+}
+
+static inline int addr_to_l3m(unsigned long addr)
+{
+    int l2m_id = (addr >> L2M_THRESHOLD_BITS) & (NO_L2MS - 1);
+
+    return l2m_id + L2M_SLAVE_ID;
 }
 
 #define from_l2m(src)	(src >= L2M_SLAVE_ID && src < (L2M_SLAVE_ID + NO_L2MS))
