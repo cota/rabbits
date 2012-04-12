@@ -95,26 +95,26 @@ namespace noc
         bool      sleep;
     };
 
+
     template <typename T>
-        class tlm_blocking_put_if : public sc_interface
+        class mytlm_blocking_put_if : public sc_interface
     {
     public:
         virtual void put (T&) = 0;
     };
 
     template <typename T>
-        class tlm_blocking_get_if : public sc_interface
+        class mytlm_blocking_get_if : public sc_interface
     {
     public:
         virtual void get (T&) = 0;
     };
 
+    typedef mytlm_blocking_put_if<vci_request>  VCI_PUT_REQ_IF;
+    typedef mytlm_blocking_put_if<vci_response> VCI_PUT_RSP_IF;
 
-    typedef tlm_blocking_put_if<vci_request>  VCI_PUT_REQ_IF;
-    typedef tlm_blocking_put_if<vci_response> VCI_PUT_RSP_IF;
-
-    typedef tlm_blocking_get_if<vci_response> VCI_GET_RSP_IF;
-    typedef tlm_blocking_get_if<vci_request>  VCI_GET_REQ_IF;
+    typedef mytlm_blocking_get_if<vci_response> VCI_GET_RSP_IF;
+    typedef mytlm_blocking_get_if<vci_request>  VCI_GET_REQ_IF;
 
 }
 

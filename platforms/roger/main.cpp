@@ -44,6 +44,8 @@
 #include <qemu_imported.h>
 #include <qemu_wrapper_cts.h>
 #include <l2m_device.h>
+#include <sl_nof_adapter.h>
+#include <acc_nop.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -92,6 +94,8 @@ int sc_main (int argc, char ** argv)
 
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
+    sl_nof_adapter    *adapter = new sl_nof_adapter("nof_adapter", 512, 512);
+    acc_nop           *acc = new acc_nop("acc", 512);
     char buf[10];
 
     for (i = 0; i < NO_L2MS; i++) {
@@ -115,6 +119,8 @@ int sc_main (int argc, char ** argv)
     }
     for (i = 0; i < NO_L2MS; i++)
         slaves[nslaves++] = l2m[i]->get_slave();// 7 + i
+
+    slaves[nslaves++] = adapter; // 7 + NO_L2MS
 
     int                         no_irqs = ntimers + 3; /* timers + TTY + FB + DBF */
     int                         int_cpu_mask [] = {1, 1, 1, 1, 0, 0};
@@ -174,6 +180,12 @@ int sc_main (int argc, char ** argv)
                                 l2m[i]->get_master()->put_port,
                                 l2m[i]->get_master()->get_port);
     }
+
+    /* Connect nof adapter to the nof accelerator */
+    adapter->to_acc(acc->from_ni);
+    adapter->from_acc(acc->to_ni);
+
+    adapter->acc_regs(acc->acc_regs);
 
     sc_start ();
 

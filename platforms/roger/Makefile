@@ -1,5 +1,7 @@
 HW           = $(RABBITS_DIR)
 SYSTEMC      = $(RABBITS_SYSTEMC)
+TLM          = /opt/TLM-2009-07-15
+NOF          = /home/cota/nof
 QEMU         = $(HW)/rabbits/libs
 COMPONENTS   = rabbits/components
 PLATFORMS    = platforms
@@ -18,6 +20,8 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/tty_serial         \
                $(COMPONENTS)/etrace             \
                $(COMPONENTS)/l2m_device         \
+               $(COMPONENTS)/sl_nof_adapter     \
+	       $(COMPONENTS)/acc_nop            \
                $(PLATFORMS)/roger
 
 CC           = g++
@@ -31,6 +35,8 @@ RLIBDIR      = -Wl,-rpath $(QEMU)
 TARGET_ARCH  = linux
 
 INCDIR += -I$(SYSTEMC)/include
+INCDIR += -I$(TLM)/include/tlm
+INCDIR += -I$(NOF)/src/mumgr/sysc -I$(NOF)/src/packages
 INCDIR += $(foreach SUB_DIR, $(SUB_DIRS), $(addprefix -I$(SRC_BASE_DIR)/, $(SUB_DIR)))
 
 MODULE       = run
