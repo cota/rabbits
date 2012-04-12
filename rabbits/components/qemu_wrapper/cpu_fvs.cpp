@@ -20,17 +20,11 @@
 #include <cfg.h>
 #include <cpu_fvs.h>
 
-static unsigned long   arm_cpu_fv[] = {25, 50, 100, 150, 200, 250, 300, 0};
+static unsigned long   arm_cpu_fv[] = {1000, 0};
 
 static double          arm_cpu_fv_percents[] = {
-    ((double)  25 * 100) / 300,
-    ((double)  50 * 100) / 300,
-    ((double) 100 * 100) / 300,
-    ((double) 150 * 100) / 300,
-    ((double) 200 * 100) / 300,
-    ((double) 250 * 100) / 300,
-    ((double) 300 * 100) / 300,
-    ((double)   0 * 100) / 300
+    ((double) 1000 * 100) / 1000,
+    ((double)    0 * 100) / 1000
 };
 
 int get_cpu_nb_fv_levels (const char *cpufamily, const char *cpumodel)
