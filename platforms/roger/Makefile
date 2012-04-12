@@ -2,6 +2,7 @@ HW           = $(RABBITS_DIR)
 SYSTEMC      = $(RABBITS_SYSTEMC)
 TLM          = /opt/TLM-2009-07-15
 NOF          = /home/cota/nof
+JPEG         = /home/cota/src/jpeg_acc/jpeg0
 QEMU         = $(HW)/rabbits/libs
 COMPONENTS   = rabbits/components
 PLATFORMS    = platforms
@@ -21,7 +22,8 @@ SUB_DIRS     = $(COMPONENTS)/abstract_noc       \
                $(COMPONENTS)/etrace             \
                $(COMPONENTS)/l2m_device         \
                $(COMPONENTS)/sl_nof_adapter     \
-	       $(COMPONENTS)/acc_nop            \
+	       $(COMPONENTS)/acc_jpeg           \
+               $(COMPONENTS)/acc_jpeg_adapter   \
                $(PLATFORMS)/roger
 
 CC           = g++

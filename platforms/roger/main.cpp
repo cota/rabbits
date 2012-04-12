@@ -45,11 +45,15 @@
 #include <qemu_wrapper_cts.h>
 #include <l2m_device.h>
 #include <sl_nof_adapter.h>
-#include <acc_nop.h>
+#include <jpgdec.h>
+#include <acc_jpeg_adapter.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+
+#define JPEG_BLOCK_SIZE	64
+#define JPEG_BLOCK_ITEMS (JPEG_BLOCK_SIZE / sizeof(uint32_t))
 
 unsigned long no_frames_to_simulate = 0;
 
@@ -94,8 +98,13 @@ int sc_main (int argc, char ** argv)
 
     timer_device      *timers[1];
     int                ntimers = sizeof (timers) / sizeof (timer_device *);
-    sl_nof_adapter    *adapter = new sl_nof_adapter("nof_adapter", 512, 512);
-    acc_nop           *acc = new acc_nop("acc", 512);
+    sl_nof_adapter    *adapter = new sl_nof_adapter("nof_adapter", JPEG_BLOCK_ITEMS,
+                                                    JPEG_BLOCK_ITEMS);
+    jpgdec          *acc = new jpgdec("acc");
+    acc_jpeg_adapter *jpeg_adapter = new acc_jpeg_adapter("acc_adapter");
+    sc_clock        clk("clk", 1, SC_NS);
+    sc_signal<bool> rst("rst");
+
     char buf[10];
 
     for (i = 0; i < NO_L2MS; i++) {
@@ -182,10 +191,19 @@ int sc_main (int argc, char ** argv)
     }
 
     /* Connect nof adapter to the nof accelerator */
-    adapter->to_acc(acc->from_ni);
-    adapter->from_acc(acc->to_ni);
+    acc->clk(clk);
+    acc->rst(clk);
+    adapter->to_acc(jpeg_adapter->from_ni);
+    adapter->from_acc(jpeg_adapter->to_ni);
+
+    acc->in_data(jpeg_adapter->to_acc);
+    acc->out_data(jpeg_adapter->from_acc);
 
     adapter->acc_regs(acc->acc_regs);
+
+    rst.write(false);
+    sc_start(2,SC_NS);
+    rst.write(true);
 
     sc_start ();
 
