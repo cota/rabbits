@@ -56,11 +56,11 @@ static inline int send_write(void)
 
 static void write_block(uint32_t *mp, uint32_t *data, size_t len)
 {
-	for (int i = 0; i < len; i++)
-		iowrite32(data[i], mp + i);
-
 	while (!can_write())
 		usleep(1);
+
+	for (int i = 0; i < len; i++)
+		iowrite32(data[i], mp + i);
 	send_write();
 }
 
