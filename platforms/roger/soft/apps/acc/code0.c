@@ -154,12 +154,6 @@ int out_data_comp_hpos[RGB_NUM];
 unsigned char OutData_comp_buf[RGB_NUM][IMAGE_SIZE];
 
 
-/*
-* Testbench mismatches
-*/
-int main_result = 0;
-
-
 /*******************************************
 CHEN IDCT
 ********************************************/
@@ -1261,30 +1255,6 @@ jpeg2bmp_main ()
   jpeg_read (JpegFileBuf);
 
 
-//WRITE IMAGE FILES
-FILE *bmpout;
-bmpout = fopen ("c_bmpout.bmp","w+");
-unsigned char buf[1];
-printf("BMP_SIZE %d\n",IMAGE_SIZE);
-for (i = 0; i < bmp_header_size; i++){
-    buf[0] = bmp_header[i];
-    fwrite(buf,sizeof(char),1,bmpout);
-}
-
-for (i = IMAGE_SIZE-1; i >= 0 ; i--){
-  for (j = RGB_NUM-1; j >= 0; j--) {
-    buf[0] = OutData_comp_buf[j][(WIDTH*(1+(i/WIDTH)) - (i%WIDTH))-1];
-	if (buf[0] != golden_bmp[RGB_NUM-j-1][IMAGE_SIZE-i-1])
-	    {
-	      main_result++;
-		//printf ("golden_bmp[%d][%d]\n",RGB_NUM-j-1,IMAGE_SIZE-i-1);
-		//printf ("golden: %d, received: %d\n",golden_bmp[RGB_NUM-j-1][IMAGE_SIZE-i-1], buf[0]);
-	    }
-    fwrite(buf,sizeof(char),1,bmpout);
-  }
-}
-fclose(bmpout);
-
 #if 0
 FILE *jpgin;
 jpgin = fopen ("c_jpgin.jpg","w+");
@@ -1307,10 +1277,7 @@ C MAIN
 int
 main ()
 {
-  main_result = 0;
   jpeg2bmp_main ();
 
-  printf ("%d\n", main_result);
-
-  return main_result;
+  return 0;
 }

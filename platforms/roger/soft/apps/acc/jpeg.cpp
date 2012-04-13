@@ -23,7 +23,6 @@
 
 static uint32_t *mp, *regs, *acc_regs;
 static unsigned char bmp_received[RGB_NUM][IMAGE_SIZE];
-static int main_result;
 
 static void *map_area(const char *dev, int n)
 {
@@ -100,32 +99,6 @@ static inline int mark_read(void)
 	iowrite32(1, regs + NOF_ADAPTER_REG_RD_EMPTY);
 }
 
-static void print_bmp(void)
-{
-	FILE *bmpout;
-	bmpout = fopen ("bmpout_acc.bmp","w");
-	unsigned char buf[1];
-	printf("BMP_SIZE %d\n",IMAGE_SIZE);
-	for (int i = 0; i < bmp_header_size; i++){
-		buf[0] = bmp_header[i];
-		fwrite(buf,sizeof(char),1,bmpout);
-	}
-
-	for (int i = IMAGE_SIZE-1; i >= 0 ; i--){
-		for (int j = RGB_NUM-1; j >= 0; j--) {
-			buf[0] = bmp_received[j][(WIDTH*(1+(i/WIDTH)) - (i%WIDTH))-1];
-			if (buf[0] != golden_bmp[RGB_NUM-j-1][IMAGE_SIZE-i-1])
-			{
-				main_result++;
-				//printf ("golden_bmp[%d][%d]\n",RGB_NUM-j-1,IMAGE_SIZE-i-1);
-				//printf ("golden: %d, received: %d\n",golden_bmp[RGB_NUM-j-1][IMAGE_SIZE-i-1], buf[0]);
-			}
-			fwrite(buf,sizeof(char),1,bmpout);
-		}
-	}
-	fclose(bmpout);
-}
-
 static void read_output(void)
 {
 	int bmp_block_num = ((WIDTH + DCTSIZE - 1) / DCTSIZE) *
@@ -163,10 +136,6 @@ static void read_output(void)
 			vpos += 2;
 		}
 	}
-
-//	cout << "Printing BMP file" << endl;
-	print_bmp();
-	printf ("%d\n", main_result);
 }
 
 int main(int argc, char *argv[])
