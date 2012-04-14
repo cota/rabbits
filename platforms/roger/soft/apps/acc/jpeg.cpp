@@ -56,7 +56,7 @@ static inline int send_write(void)
 static void write_block(uint32_t *mp, uint32_t *data, size_t len)
 {
 	while (!can_write())
-		usleep(1);
+		;
 
 	for (int i = 0; i < len; i++)
 		iowrite32(data[i], mp + i);
@@ -91,7 +91,7 @@ static void read_block(uint32_t *data, size_t len)
 static inline int poll_read(void)
 {
 	if (!ioread32(regs + NOF_ADAPTER_REG_RD_FULL))
-		usleep(1);
+		;
 }
 
 static inline int mark_read(void)
