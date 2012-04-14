@@ -154,7 +154,6 @@ static int read_position = -1;
 */
 int out_data_comp_vpos[RGB_NUM];
 int out_data_comp_hpos[RGB_NUM];
-unsigned char OutData_comp_buf[RGB_NUM][IMAGE_SIZE];
 
 
 /*******************************************
@@ -589,7 +588,8 @@ WriteOneBlock (int *store, char *out_buf, int width, int height,
 	    {
 	      if (e < width)
 		{
-		  out_buf[diff + e] = (unsigned char) (*(store++));
+		  if (out_buf)
+		    out_buf[diff + e] = (unsigned char) (*(store++));
 		}
 	      else
 		{
@@ -808,7 +808,7 @@ decode_start ()
 			    &rgb_buf[2][i][0],
 			    &rgb_buf[3][i][0],
 			    &out_data_comp_vpos[i],
-			    &out_data_comp_hpos[i], &OutData_comp_buf[i][0]);
+			    &out_data_comp_hpos[i], NULL);
 	    }
 
 

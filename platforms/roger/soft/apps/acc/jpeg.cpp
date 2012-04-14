@@ -24,7 +24,6 @@
 #define NOF_ADAPTER_REG_RD_FULL		3 /* R/O */
 
 static uint32_t *mp, *regs, *acc_regs;
-static unsigned char bmp_received[RGB_NUM][IMAGE_SIZE];
 
 static void *map_area(const char *dev, int n)
 {
@@ -127,7 +126,6 @@ static void read_output(void)
 						int hind = (hpos + ( i%2 ) )*DCTSIZE + k;
 						if (hind >= WIDTH) break;
 						//cout << "Actually written @ " << vind << " + " << hind << " = " << vind + hind << endl;
-						bmp_received[c][vind + hind] = data.array[DCTSIZE*j + k];
 					}
 				}
 			}
