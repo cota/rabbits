@@ -7,7 +7,7 @@ INITRD_DIR=/home/cota/src/rabbits/platforms/roger/soft/initrd
 
 make
 ./makeall.sh
-cp -v load.sh code0 out.* $DEST
+cp -v load.sh runall.sh runsoft.sh runacc.sh out.* $DEST
 cd $INITRD_DIR
 ./make_initramfs.sh
 cd -

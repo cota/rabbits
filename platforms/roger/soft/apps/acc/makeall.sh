@@ -5,11 +5,13 @@ set -e
 JPEG=/home/cota/src/jpeg_acc/jpeg0
 PAR=4
 
-for CONF in chstone411 lena411 fire411; do
+IMGS=$(for i in $JPEG/img/*.bmp; do (echo $i | sed 's|.*/\(.*\)\.bmp|\1|'); done | xargs)
+
+for CONF in $IMGS; do
     cd $JPEG/sysc_sim
     make clean
     make -j$PAR conf IMG=$CONF
-    make
+    make -j$PAR
     cd -
     make clean
     make -j$PAR
