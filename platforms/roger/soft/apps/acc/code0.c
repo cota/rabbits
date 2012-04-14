@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "global.h"
 #include "../tb/init.h"
+
+#include "comcas.h"
 
 
 /*
@@ -1277,7 +1280,17 @@ C MAIN
 int
 main ()
 {
+  uint64_t init, end;
+
+  if (comcas_get_attr_u64(COMCAS_N_CYCLES, &init))
+    perror("warning: n_cycles init");
+
   jpeg2bmp_main ();
+
+  if (comcas_get_attr_u64(COMCAS_N_CYCLES, &end))
+    perror("warning: n_cycles end");
+
+  printf("%lld\n", end - init);
 
   return 0;
 }

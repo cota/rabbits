@@ -1,3 +1,6 @@
 out.*
 jpeg
 *.bmp
+*.o
+n_cycles
+code0

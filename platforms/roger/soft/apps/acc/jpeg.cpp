@@ -12,6 +12,8 @@
 #include <jpgdec_regs.h>
 #include <jpgblock.h>
 
+#include "comcas.h"
+
 #define PAGE_SIZE	(4 * 1024)
 #define LEN		16
 #define DEV_PATH "/dev/uio0"
@@ -143,6 +145,10 @@ int main(int argc, char *argv[])
 	size_t addr;
 	pid_t pid;
 	int fd;
+	uint64_t init, end;
+
+	if (comcas_get_attr_u64(COMCAS_N_CYCLES, &init))
+		perror("warning: n_cycles init");
 
 	mp		= (uint32_t *)map_area(DEV_PATH, 0);
 	regs		= (uint32_t *)map_area(DEV_PATH, 1);
@@ -158,10 +164,16 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (pid == 0)
+	if (pid == 0) {
 		write_input();
-	else
+	} else {
 		read_output();
+
+		if (comcas_get_attr_u64(COMCAS_N_CYCLES, &end))
+			perror("warning: n_cycles end");
+
+		printf("%lld\n", end - init);
+	}
 
 	return 0;
 }
